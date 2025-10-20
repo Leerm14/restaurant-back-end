@@ -1,2 +1,4 @@
 package com.nhahang.restaurant.model;
-public enum RoleName { USER, STAFF, ADMIN }
+public enum RoleName { 
+    user, staff, admin 
+}

@@ -1,5 +1,6 @@
 package com.nhahang.restaurant.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nhahang.restaurant.model.TableStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,8 +20,9 @@ public class RestaurantTable { // Đổi tên từ 'Table' để tránh xung đ�
     @Column(nullable = false)
     private int capacity;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // Tương ứng với ENUM('Available', 'Occupied', 'Reserved', 'Cleaning')
+    private TableStatus status; // Tương ứng với ENUM('Available', 'Occupied', 'Reserved', 'Cleaning')
 
     // ----- Quan hệ ngược -----
     

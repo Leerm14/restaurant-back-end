@@ -1,5 +1,7 @@
 package com.nhahang.restaurant.model.entity;
 
+import com.nhahang.restaurant.model.OrderStatus;
+import com.nhahang.restaurant.model.OrderType;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,11 +30,13 @@ public class Order {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // ENUM('Pending', 'Confirmed', 'Preparing', 'Completed', 'Cancelled')
+    private OrderStatus status; // ENUM('Pending', 'Confirmed', 'Preparing', 'Completed', 'Cancelled')
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "order_type", nullable = false)
-    private String orderType; // ENUM('Dine-in', 'Takeaway')
+    private OrderType orderType; // ENUM('Dine-in', 'Takeaway')
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -1,5 +1,5 @@
 package com.nhahang.restaurant.model;
 
 public enum OrderStatus {
-    PENDING, CONFIRMED, PREPARING, COMPLETED, CANCELLED
+    Pending, Confirmed, Preparing, Completed, Cancelled
 }

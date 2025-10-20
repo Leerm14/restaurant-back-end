@@ -1,6 +1,8 @@
 package com.nhahang.restaurant.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nhahang.restaurant.model.PaymentMethod;
+import com.nhahang.restaurant.model.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,11 +27,13 @@ public class Payment {
     @Column(nullable = false)
     private BigDecimal amount;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
-    private String paymentMethod; // ENUM('Cash', 'QR Code', 'Credit Card')
+    private PaymentMethod paymentMethod; // ENUM('Cash', 'QR Code', 'Credit Card')
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // ENUM('Pending', 'Successful', 'Failed')
+    private PaymentStatus status; // ENUM('Pending', 'Successful', 'Failed')
 
     @Column(name = "transaction_id")
     private String transactionId;

@@ -1,5 +1,6 @@
 package com.nhahang.restaurant.model.entity;
 
+import com.nhahang.restaurant.model.BookingStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ public class Booking {
     @Column(name = "num_guests", nullable = false)
     private int numGuests;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // ENUM('Confirmed', 'Cancelled', 'Completed')
+    private BookingStatus status; // ENUM('Confirmed', 'Cancelled', 'Completed')
 }

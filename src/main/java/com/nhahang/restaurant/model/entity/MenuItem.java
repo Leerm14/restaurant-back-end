@@ -1,4 +1,5 @@
 package com.nhahang.restaurant.model.entity;
+import com.nhahang.restaurant.model.MenuItemStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -27,6 +28,7 @@ public class MenuItem {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // Tương ứng với ENUM('Available', 'Unavailable')
+    private MenuItemStatus status; // Tương ứng với ENUM('Available', 'Unavailable')
 }
