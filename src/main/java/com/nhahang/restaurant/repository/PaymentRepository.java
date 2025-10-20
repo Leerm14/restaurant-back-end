@@ -1,0 +1,14 @@
+package com.nhahang.restaurant.repository;
+
+import com.nhahang.restaurant.model.entity.Payment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface PaymentRepository extends JpaRepository<Payment, Integer> {
+    
+    // Tìm thanh toán bằng orderId (dựa vào order.id)
+    Optional<Payment> findByOrderId(Integer orderId);
+}
