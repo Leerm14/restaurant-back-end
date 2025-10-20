@@ -12,5 +12,7 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Integer> {
     List<MenuItem> findByCategoryId(Integer categoryId);
 
     // Tìm danh sách món ăn theo trạng thái (Available / Unavailable)
-    List<MenuItem> findByStatus(String status);
+    List<MenuItem> findByStatus(com.nhahang.restaurant.model.MenuItemStatus status);
+
+    
 }
