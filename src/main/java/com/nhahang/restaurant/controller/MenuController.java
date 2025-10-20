@@ -15,12 +15,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 
 
-@RestController // 1. Đánh dấu đây là một REST Controller (chuyên trả về JSON)
-@RequestMapping("/api/menu") // 2. Đường dẫn cơ sở cho tất cả API trong class này
-@RequiredArgsConstructor // 3. Tự động tiêm (inject) MenuService qua constructor
+@RestController 
+@RequestMapping("/api/menu") 
+@RequiredArgsConstructor 
 public class MenuController {
 
-    // 4. Tiêm Service mà Controller này cần
     private final MenuService menuService;
 
     // --- API 1: LẤY TẤT CẢ MÓN ĂN ---
@@ -37,7 +36,7 @@ public class MenuController {
                 .map(item -> ResponseEntity.ok(item)) 
                 .orElse(ResponseEntity.notFound().build()); 
     }
-
+    // --- API 2b: LẤY MÓN ĂN THEO CATEGORY ID ---
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<MenuItem>> getMenuItemsByCategoryId(@PathVariable Integer categoryId) {
         List<MenuItem> menuItems = menuService.getMenuItemsByCategoryId(categoryId);

@@ -1,0 +1,62 @@
+package com.nhahang.restaurant.controller;
+
+import com.nhahang.restaurant.dto.CategoryDTO;
+import com.nhahang.restaurant.model.entity.Category;
+import com.nhahang.restaurant.service.CategoryService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/categories")
+@RequiredArgsConstructor
+public class CategoryController {
+
+    private final CategoryService categoryService;
+
+    // --- API 1: LẤY TẤT CẢ CATEGORIES ---
+    @GetMapping
+    public ResponseEntity<List<Category>> getAllCategories() {
+        List<Category> categories = categoryService.getAllCategories();
+        return ResponseEntity.ok(categories);
+    }
+
+    // --- API 2: TẠO CATEGORY MỚI ---
+    @PostMapping
+    public ResponseEntity<Category> createCategory(@RequestBody CategoryDTO categoryDTO) {
+        try {
+            Category createdCategory = categoryService.createCategory(categoryDTO);
+            return new ResponseEntity<>(createdCategory, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            System.err.println("Error creating category: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // --- API 3: CẬP NHẬT CATEGORY ---
+    @PutMapping("/{id}")
+    public ResponseEntity<Category> updateCategory(@PathVariable Integer id, @RequestBody CategoryDTO categoryDTO) {
+        try {
+            Category updatedCategory = categoryService.updateCategory(id, categoryDTO);
+            return ResponseEntity.ok(updatedCategory);
+        } catch (RuntimeException e) {
+            System.err.println("Error updating category: " + e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // --- API 5: XÓA CATEGORY ---
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Integer id) {
+        try {
+            categoryService.deleteCategory(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            System.err.println("Error deleting category: " + e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+}
