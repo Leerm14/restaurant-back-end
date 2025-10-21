@@ -4,6 +4,9 @@ import com.nhahang.restaurant.dto.CategoryDTO;
 import com.nhahang.restaurant.model.entity.Category;
 import com.nhahang.restaurant.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +23,15 @@ public class CategoryService {
      */
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
+    }
+
+    /**
+     * Lấy tất cả categories với pagination
+     */
+    public List<Category> getAllCategories(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Category> categoryPage = categoryRepository.findAll(pageable);
+        return categoryPage.getContent();
     }
 
     /**

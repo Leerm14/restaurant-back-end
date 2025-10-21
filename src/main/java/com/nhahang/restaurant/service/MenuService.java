@@ -6,6 +6,9 @@ import com.nhahang.restaurant.model.entity.MenuItem;
 import com.nhahang.restaurant.repository.MenuItemRepository;
 import com.nhahang.restaurant.repository.CategoryRepository; // Giả sử bạn cần cả Category
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,6 +47,43 @@ public class MenuService {
      */
     public List<MenuItem> getAvailableMenuItems() {
         return menuItemRepository.findByStatus(MenuItemStatus.Available);
+    }
+
+    /**
+     * Logic: Lấy các món ăn đang 'Unavailable'
+     */
+    public List<MenuItem> getUnavailableMenuItems() {
+        return menuItemRepository.findByStatus(MenuItemStatus.Unavailable);
+    }
+
+    /**
+     * Logic: Lấy menu items với pagination và filter available
+     */
+    public List<MenuItem> getMenuItems(Boolean available, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        
+        if (available != null && available) {
+            // Chỉ lấy món Available với pagination
+            Page<MenuItem> menuPage = menuItemRepository.findByStatus(MenuItemStatus.Available, pageable);
+            return menuPage.getContent();
+        } else if (available != null && !available) {
+            // Chỉ lấy món Unavailable với pagination
+            Page<MenuItem> menuPage = menuItemRepository.findByStatus(MenuItemStatus.Unavailable, pageable);
+            return menuPage.getContent();
+        } else {
+            // Lấy tất cả với pagination
+            Page<MenuItem> menuPage = menuItemRepository.findAll(pageable);
+            return menuPage.getContent();
+        }
+    }
+
+    /**
+     * Logic: Lấy menu items theo category với pagination
+     */
+    public List<MenuItem> getMenuItemsByCategoryId(Integer categoryId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MenuItem> menuPage = menuItemRepository.findByCategoryId(categoryId, pageable);
+        return menuPage.getContent();
     }
     public MenuItem createMenuItem(MenuItemDTO menuItemDTO) {
         var category = categoryRepository.findById(menuItemDTO.getCategoryId())

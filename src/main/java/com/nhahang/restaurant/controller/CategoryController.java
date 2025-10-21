@@ -17,10 +17,18 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    // --- API 1: LẤY TẤT CẢ CATEGORIES ---
+    // --- API 1: LẤY TẤT CẢ CATEGORIES (với pagination) ---
     @GetMapping
-    public ResponseEntity<List<Category>> getAllCategories() {
-        List<Category> categories = categoryService.getAllCategories();
+    public ResponseEntity<List<Category>> getAllCategories(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        // Validation
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100;
+        
+        List<Category> categories = categoryService.getAllCategories(page, size);
         return ResponseEntity.ok(categories);
     }
 

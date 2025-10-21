@@ -22,11 +22,20 @@ public class MenuController {
 
     private final MenuService menuService;
 
-    // --- API 1: LẤY TẤT CẢ MÓN ĂN ---
+    // --- API 1: LẤY TẤT CẢ MÓN ĂN (với filter available + pagination) ---
     @GetMapping 
-    public ResponseEntity<List<MenuItem>> getAvailableMenuItems() {
-        List<MenuItem> menuItems = menuService.getAvailableMenuItems();
-        return ResponseEntity.ok(menuItems); 
+    public ResponseEntity<List<MenuItem>> getMenuItems(
+            @RequestParam(value = "available", required = false) Boolean available,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        // Validation: page >= 0, size > 0 và size <= 100
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100; // Giới hạn tối đa 100 items/page
+        
+        List<MenuItem> menuItems = menuService.getMenuItems(available, page, size);
+        return ResponseEntity.ok(menuItems);
     }
 
     // --- API 2: LẤY MÓN ĂN THEO ID ---
@@ -36,10 +45,19 @@ public class MenuController {
                 .map(item -> ResponseEntity.ok(item)) 
                 .orElse(ResponseEntity.notFound().build()); 
     }
-    // --- API 2b: LẤY MÓN ĂN THEO CATEGORY ID ---
+    // --- API 2b: LẤY MÓN ĂN THEO CATEGORY ID (với pagination) ---
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<MenuItem>> getMenuItemsByCategoryId(@PathVariable Integer categoryId) {
-        List<MenuItem> menuItems = menuService.getMenuItemsByCategoryId(categoryId);
+    public ResponseEntity<List<MenuItem>> getMenuItemsByCategoryId(
+            @PathVariable Integer categoryId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        // Validation
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100;
+        
+        List<MenuItem> menuItems = menuService.getMenuItemsByCategoryId(categoryId, page, size);
         return ResponseEntity.ok(menuItems);
     }
     
