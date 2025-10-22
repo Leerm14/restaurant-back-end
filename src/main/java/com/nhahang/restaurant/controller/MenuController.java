@@ -25,7 +25,7 @@ public class MenuController {
     // --- API 1: LẤY TẤT CẢ MÓN ĂN (với filter available + pagination) ---
     @GetMapping 
     public ResponseEntity<List<MenuItem>> getMenuItems(
-            @RequestParam(value = "available", required = false) Boolean available,
+            @RequestParam(value = "available", required = true) Boolean available,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         
