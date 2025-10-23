@@ -9,9 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.multipart.MultipartFile;
 
 
 
@@ -25,7 +28,7 @@ public class MenuController {
     // --- API 1: LẤY TẤT CẢ MÓN ĂN (với filter available + pagination) ---
     @GetMapping 
     public ResponseEntity<List<MenuItem>> getMenuItems(
-            @RequestParam(value = "available", required = true) Boolean available,
+            @RequestParam(value = "available", required = false) Boolean available,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         
@@ -94,5 +97,66 @@ public class MenuController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // --- API 5: UPLOAD ẢNH CHO MÓN ĂN ---
+    @PostMapping("/{id}/upload-image")
+    public ResponseEntity<Map<String, String>> uploadMenuItemImage(
+            @PathVariable Integer id, 
+            @RequestParam("image") MultipartFile file) {
+        
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            // 1. Kiểm tra món ăn có tồn tại không
+            var menuItem = menuService.getMenuItemById(id);
+            if (menuItem.isEmpty()) {
+                response.put("error", "Không tìm thấy món ăn với ID: " + id);
+                return ResponseEntity.notFound().build();
+            }
+
+            // 2. Validation file
+            if (file.isEmpty()) {
+                response.put("error", "File ảnh không được để trống");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 3. Kiểm tra định dạng file
+            String contentType = file.getContentType();
+            if (!isImageFile(contentType)) {
+                response.put("error", "Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp)");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 4. Kiểm tra kích thước file (tối đa 5MB)
+            if (file.getSize() > 5 * 1024 * 1024) {
+                response.put("error", "Kích thước file không được vượt quá 5MB");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 5. Lưu file và cập nhật imageUrl cho món ăn
+            String imageUrl = menuService.uploadImageForMenuItem(id, file);
+            
+            response.put("message", "Upload ảnh thành công");
+            response.put("imageUrl", imageUrl);
+            response.put("menuItemId", id.toString());
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // --- HELPER METHOD ---
+    private boolean isImageFile(String contentType) {
+        return contentType != null && (
+                contentType.equals("image/jpeg") ||
+                contentType.equals("image/jpg") ||
+                contentType.equals("image/png") ||
+                contentType.equals("image/gif") ||
+                contentType.equals("image/webp")
+        );
     }
 }

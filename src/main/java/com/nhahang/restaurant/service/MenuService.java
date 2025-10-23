@@ -13,6 +13,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.io.IOException;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service 
 @RequiredArgsConstructor 
@@ -140,5 +147,54 @@ public class MenuService {
          MenuItem existingMenuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + id));
          menuItemRepository.delete(existingMenuItem);
+    }
+
+    // Thư mục lưu ảnh
+    private static final String UPLOAD_DIR = "uploads/images/";
+
+    /**
+     * Logic: Upload ảnh cho món ăn và cập nhật imageUrl
+     */
+    public String uploadImageForMenuItem(Integer menuItemId, MultipartFile file) {
+        try {
+            // 1. Tìm món ăn
+            MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + menuItemId));
+
+            // 2. Tạo thư mục nếu chưa tồn tại
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // 3. Tạo tên file unique
+            String originalFilename = file.getOriginalFilename();
+            String fileExtension = getFileExtension(originalFilename);
+            String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+
+            // 4. Lưu file
+            Path filePath = uploadPath.resolve(uniqueFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // 5. Cập nhật imageUrl cho món ăn
+            String imageUrl = "/api/upload/images/" + uniqueFilename;
+            menuItem.setImageUrl(imageUrl);
+            menuItemRepository.save(menuItem);
+
+            return imageUrl;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi lưu file ảnh: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Helper method: Lấy file extension từ filename
+     */
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return ".jpg"; // Default extension
+        }
+        return filename.substring(filename.lastIndexOf("."));
     }
 }
