@@ -36,7 +36,6 @@ public class MenuController {
         if (page < 0) page = 0;
         if (size <= 0) size = 10;
         if (size > 100) size = 100; // Giới hạn tối đa 100 items/page
-        
         List<MenuItem> menuItems = menuService.getMenuItems(available, page, size);
         return ResponseEntity.ok(menuItems);
     }

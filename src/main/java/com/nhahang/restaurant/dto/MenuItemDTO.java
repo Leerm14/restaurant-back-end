@@ -9,6 +9,6 @@ public class MenuItemDTO {
     private String description;
     private String imageUrl;
     private BigDecimal price;
-    private Integer categoryId; // Chỉ cần gửi ID của category
+    private Integer categoryId; 
     private String status;
 }
