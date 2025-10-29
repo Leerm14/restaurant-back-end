@@ -35,7 +35,7 @@ public class MenuController {
         // Validation: page >= 0, size > 0 và size <= 100
         if (page < 0) page = 0;
         if (size <= 0) size = 10;
-        if (size > 100) size = 100; // Giới hạn tối đa 100 items/page
+        if (size > 100) size = 100; 
         List<MenuItem> menuItems = menuService.getMenuItems(available, page, size);
         return ResponseEntity.ok(menuItems);
     }
@@ -54,7 +54,6 @@ public class MenuController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         
-        // Validation
         if (page < 0) page = 0;
         if (size <= 0) size = 10;
         if (size > 100) size = 100;
@@ -66,7 +65,6 @@ public class MenuController {
     // --- API 3: TẠO MỘT MÓN ĂN MỚI (Dùng cho Admin) ---
     @PostMapping 
     public ResponseEntity<MenuItem> createMenuItem(@RequestBody MenuItemDTO menuItemDTO) {
-        // @RequestBody: Spring tự động chuyển JSON client gửi lên thành đối tượng MenuItemDTO
         try {
             MenuItem createdItem = menuService.createMenuItem(menuItemDTO);
             return new ResponseEntity<>(createdItem, HttpStatus.CREATED); 
@@ -82,7 +80,6 @@ public class MenuController {
             MenuItem updatedItem = menuService.updateMenuItem(id, menuItemDTO);
             return ResponseEntity.ok(updatedItem);
         } catch (RuntimeException e) {
-            // Log error for debugging
             System.err.println("Error updating menu item: " + e.getMessage());
             return ResponseEntity.notFound().build();
         }
@@ -107,27 +104,24 @@ public class MenuController {
         Map<String, String> response = new HashMap<>();
         
         try {
-            // 1. Kiểm tra món ăn có tồn tại không
             var menuItem = menuService.getMenuItemById(id);
             if (menuItem.isEmpty()) {
                 response.put("error", "Không tìm thấy món ăn với ID: " + id);
                 return ResponseEntity.notFound().build();
             }
 
-            // 2. Validation file
             if (file.isEmpty()) {
                 response.put("error", "File ảnh không được để trống");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // 3. Kiểm tra định dạng file
+
             String contentType = file.getContentType();
             if (!isImageFile(contentType)) {
                 response.put("error", "Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp)");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // 4. Kiểm tra kích thước file (tối đa 5MB)
             if (file.getSize() > 5 * 1024 * 1024) {
                 response.put("error", "Kích thước file không được vượt quá 5MB");
                 return ResponseEntity.badRequest().body(response);

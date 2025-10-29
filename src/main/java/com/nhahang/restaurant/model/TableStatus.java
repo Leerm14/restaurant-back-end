@@ -1,3 +1,3 @@
 package com.nhahang.restaurant.model;
 
-public enum TableStatus { Available, Occupied, Reserved, Cleaning }
+public enum TableStatus { Available, Booked, Cleaning }

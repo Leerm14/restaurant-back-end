@@ -83,12 +83,16 @@ public class MenuService {
 
     /**
      * Logic: Lấy menu items theo category với pagination
-     */
+    */
     public List<MenuItem> getMenuItemsByCategoryId(Integer categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<MenuItem> menuPage = menuItemRepository.findByCategoryId(categoryId, pageable);
         return menuPage.getContent();
     }
+
+    /**
+     * Logic: Tạo món ăn mới
+    */
     public MenuItem createMenuItem(MenuItemDTO menuItemDTO) {
         var category = categoryRepository.findById(menuItemDTO.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category với ID: " + menuItemDTO.getCategoryId()));
@@ -106,7 +110,7 @@ public class MenuService {
 
     /**
      * Logic: Cập nhật một món ăn
-     */
+    */
     public MenuItem updateMenuItem(Integer id, MenuItemDTO menuItemDTO) {
         MenuItem existingMenuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + id));
@@ -130,6 +134,7 @@ public class MenuService {
 
         return menuItemRepository.save(existingMenuItem);
     }
+    
     /** 
      * Logic: Xóa một món ăn theo ID 
     */
