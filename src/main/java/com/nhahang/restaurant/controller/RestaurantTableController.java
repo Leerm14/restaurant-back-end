@@ -67,7 +67,19 @@ public class RestaurantTableController {
             return ResponseEntity.notFound().build();
         }
     }
-    // --- API 5: XÓA BÀN ---
+    // --- API 5: SỬA TRẠNG THÁI BÀN ---
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<RestaurantTable> updateTableStatus(@PathVariable Integer id, @RequestParam String status) {
+        try {
+            RestaurantTable updatedTable = restaurantTableService.updateTableStatus(id, status);
+            return ResponseEntity.ok(updatedTable);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+
+    // --- API 6: XÓA BÀN ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTable(@PathVariable Integer id) {
         try {

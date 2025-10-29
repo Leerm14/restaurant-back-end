@@ -77,6 +77,22 @@ public class RestaurantTableService {
         return restaurantTableRepository.save(existingTable);
     }
     /**
+     * Cập nhật trạng thái bàn
+     */
+    public RestaurantTable updateTableStatus(Integer id, String statusStr) {
+        RestaurantTable existingTable = restaurantTableRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + id));
+        TableStatus status;
+        try {
+            status = TableStatus.valueOf(statusStr);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Status không hợp lệ: " + statusStr);
+        }
+
+        existingTable.setStatus(status);
+        return restaurantTableRepository.save(existingTable);
+    }
+    /**
      * Xóa bàn
      */
     public void deleteTable(Integer id) {
