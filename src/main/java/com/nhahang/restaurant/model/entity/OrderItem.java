@@ -16,7 +16,7 @@ public class OrderItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    @JsonIgnore // Quan trọng: Ngăn vòng lặp Order -> OrderItem -> Order
+    @JsonIgnore 
     private Order order;
 
     @ManyToOne

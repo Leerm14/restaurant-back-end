@@ -9,6 +9,5 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     
-    // Tìm thanh toán bằng orderId (dựa vào order.id)
     Optional<Payment> findByOrderId(Integer orderId);
 }

@@ -6,6 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
-    // Thường thì OrderItem sẽ được truy vấn thông qua OrderRepository,
-    // nhưng vẫn tạo sẵn repository này để quản lý.
+
 }

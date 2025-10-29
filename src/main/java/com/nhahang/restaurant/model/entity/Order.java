@@ -42,14 +42,10 @@ public class Order {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // ----- Quan hệ -----
 
-    // Một Order có nhiều OrderItem
-    // cascade = CascadeType.ALL: Xóa Order thì xóa luôn OrderItem liên quan
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems;
 
-    // Một Order có một Payment
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Payment payment;
 }

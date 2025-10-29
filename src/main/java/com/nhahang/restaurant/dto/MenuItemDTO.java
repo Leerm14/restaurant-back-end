@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 @Data // Chỉ cần getter/setter để chứa dữ liệu
 public class MenuItemDTO {
-    // Đây là những thứ client được phép gửi lên
+
     private String name;
     private String description;
     private String imageUrl;

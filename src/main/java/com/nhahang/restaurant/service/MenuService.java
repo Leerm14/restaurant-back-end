@@ -4,7 +4,7 @@ import com.nhahang.restaurant.dto.MenuItemDTO;
 import com.nhahang.restaurant.model.MenuItemStatus;
 import com.nhahang.restaurant.model.entity.MenuItem;
 import com.nhahang.restaurant.repository.MenuItemRepository;
-import com.nhahang.restaurant.repository.CategoryRepository; // Giả sử bạn cần cả Category
+import com.nhahang.restaurant.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -70,15 +70,12 @@ public class MenuService {
         Pageable pageable = PageRequest.of(page, size);
         
         if (available != null && available) {
-            // Chỉ lấy món Available với pagination
             Page<MenuItem> menuPage = menuItemRepository.findByStatus(MenuItemStatus.Available, pageable);
             return menuPage.getContent();
         } else if (available != null && !available) {
-            // Chỉ lấy món Unavailable với pagination
             Page<MenuItem> menuPage = menuItemRepository.findByStatus(MenuItemStatus.Unavailable, pageable);
             return menuPage.getContent();
         } else {
-            // Lấy tất cả với pagination
             Page<MenuItem> menuPage = menuItemRepository.findAll(pageable);
             return menuPage.getContent();
         }
@@ -96,7 +93,6 @@ public class MenuService {
         var category = categoryRepository.findById(menuItemDTO.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category với ID: " + menuItemDTO.getCategoryId()));
 
-        // 2. Chuyển đổi từ DTO sang Entity
         MenuItem newMenuItem = new MenuItem();
         newMenuItem.setName(menuItemDTO.getName());
         newMenuItem.setDescription(menuItemDTO.getDescription());
@@ -105,7 +101,6 @@ public class MenuService {
         newMenuItem.setStatus(MenuItemStatus.valueOf(menuItemDTO.getStatus()));
         newMenuItem.setCategory(category); 
 
-        // 3. Gọi Repository để lưu
         return menuItemRepository.save(newMenuItem);
     }
 
@@ -113,15 +108,12 @@ public class MenuService {
      * Logic: Cập nhật một món ăn
      */
     public MenuItem updateMenuItem(Integer id, MenuItemDTO menuItemDTO) {
-        // 1. Kiểm tra nghiệp vụ: Món ăn có tồn tại không?
         MenuItem existingMenuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + id));
 
-        // 2. Kiểm tra nghiệp vụ: Category mới có tồn tại không?
         var category = categoryRepository.findById(menuItemDTO.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category với ID: " + menuItemDTO.getCategoryId()));
 
-        // 3. Validation status enum
         MenuItemStatus status;
         try {
             status = MenuItemStatus.valueOf(menuItemDTO.getStatus());
@@ -129,7 +121,6 @@ public class MenuService {
             throw new RuntimeException("Status không hợp lệ: " + menuItemDTO.getStatus());
         }
 
-        // 4. Cập nhật thông tin từ DTO vào Entity đã tồn tại
         existingMenuItem.setName(menuItemDTO.getName());
         existingMenuItem.setDescription(menuItemDTO.getDescription());
         existingMenuItem.setImageUrl(menuItemDTO.getImageUrl());
@@ -137,7 +128,6 @@ public class MenuService {
         existingMenuItem.setStatus(status);
         existingMenuItem.setCategory(category);
 
-        // 5. Lưu lại (vì 'existingMenuItem' đã có ID, 'save' sẽ hiểu là UPDATE)
         return menuItemRepository.save(existingMenuItem);
     }
     /** 
@@ -149,7 +139,6 @@ public class MenuService {
          menuItemRepository.delete(existingMenuItem);
     }
 
-    // Thư mục lưu ảnh
     private static final String UPLOAD_DIR = "uploads/images/";
 
     /**
@@ -157,26 +146,21 @@ public class MenuService {
      */
     public String uploadImageForMenuItem(Integer menuItemId, MultipartFile file) {
         try {
-            // 1. Tìm món ăn
             MenuItem menuItem = menuItemRepository.findById(menuItemId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + menuItemId));
 
-            // 2. Tạo thư mục nếu chưa tồn tại
             Path uploadPath = Paths.get(UPLOAD_DIR);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // 3. Tạo tên file unique
             String originalFilename = file.getOriginalFilename();
             String fileExtension = getFileExtension(originalFilename);
             String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
 
-            // 4. Lưu file
             Path filePath = uploadPath.resolve(uniqueFilename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 5. Cập nhật imageUrl cho món ăn
             String imageUrl = "/api/upload/images/" + uniqueFilename;
             menuItem.setImageUrl(imageUrl);
             menuItemRepository.save(menuItem);
@@ -193,7 +177,7 @@ public class MenuService {
      */
     private String getFileExtension(String filename) {
         if (filename == null || !filename.contains(".")) {
-            return ".jpg"; // Default extension
+            return ".jpg";
         }
         return filename.substring(filename.lastIndexOf("."));
     }

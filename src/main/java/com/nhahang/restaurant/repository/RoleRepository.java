@@ -7,6 +7,5 @@ import java.util.Optional;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Integer> {
-    // Spring Data JPA tự động tạo query tìm Role bằng roleName
     Optional<Role> findByRoleName(String roleName);
 }

@@ -8,7 +8,7 @@ import java.util.List;
 @Entity
 @Table(name = "tables")
 @Data
-public class RestaurantTable { // Đổi tên từ 'Table' để tránh xung đột
+public class RestaurantTable { 
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,10 +22,8 @@ public class RestaurantTable { // Đổi tên từ 'Table' để tránh xung đ�
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TableStatus status; // Tương ứng với ENUM('Available', 'Occupied', 'Reserved', 'Cleaning')
+    private TableStatus status; //  ENUM('Available', 'Occupied', 'Reserved', 'Cleaning')
 
-    // ----- Quan hệ ngược -----
-    
     @OneToMany(mappedBy = "table")
     @JsonIgnore
     private List<Order> orders;

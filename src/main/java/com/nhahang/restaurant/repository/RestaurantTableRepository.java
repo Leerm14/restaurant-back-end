@@ -10,9 +10,7 @@ import java.util.Optional;
 @Repository
 public interface RestaurantTableRepository extends JpaRepository<RestaurantTable, Integer> {
     
-    // Tìm bàn theo số bàn
     Optional<RestaurantTable> findByTableNumber(String tableNumber);
 
-    // Tìm danh sách bàn theo trạng thái
     List<RestaurantTable> findByStatus(String status);
 }

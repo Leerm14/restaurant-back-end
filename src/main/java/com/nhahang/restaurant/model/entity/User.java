@@ -15,6 +15,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(name = "uid", unique = true, nullable = false, updatable = false)
+    private String uid;
+
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
@@ -24,10 +27,7 @@ public class User {
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
-    @ManyToOne(fetch = FetchType.EAGER) // Lấy thông tin Role ngay khi tải User
+    @ManyToOne(fetch = FetchType.EAGER) 
     @JoinColumn(name = "role_id")
     private Role role;
 

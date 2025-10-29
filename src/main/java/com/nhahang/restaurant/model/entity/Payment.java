@@ -20,7 +20,7 @@ public class Payment {
     private Integer id;
 
     @OneToOne
-    @JoinColumn(name = "order_id", unique = true) // Mỗi thanh toán chỉ thuộc 1 đơn hàng
+    @JoinColumn(name = "order_id", unique = true) 
     @JsonIgnore
     private Order order;
 

@@ -9,9 +9,7 @@ import java.util.List;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
     
-    // Lấy lịch sử đặt bàn của một user (dựa vào user.id)
     List<Booking> findByUserId(Integer userId);
     
-    // Lấy các lịch đặt của một bàn (dựa vào table.id)
     List<Booking> findByTableId(Integer tableId);
 }

@@ -45,7 +45,6 @@ public class CategoryService {
      * Tạo category mới
      */
     public Category createCategory(CategoryDTO categoryDTO) {
-        // Kiểm tra trùng tên
         if (categoryRepository.findByName(categoryDTO.getName()).isPresent()) {
             throw new RuntimeException("Category với tên '" + categoryDTO.getName() + "' đã tồn tại");
         }
@@ -63,7 +62,6 @@ public class CategoryService {
         Category existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category với ID: " + id));
 
-        // Kiểm tra trùng tên với category khác
         Optional<Category> duplicateCategory = categoryRepository.findByName(categoryDTO.getName());
         if (duplicateCategory.isPresent() && !duplicateCategory.get().getId().equals(id)) {
             throw new RuntimeException("Category với tên '" + categoryDTO.getName() + "' đã tồn tại");
