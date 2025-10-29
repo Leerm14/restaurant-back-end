@@ -43,6 +43,13 @@ public class RestaurantTableService {
         return restaurantTableRepository.findByStatus(TableStatus.Cleaning);
     }
     /**
+     * Lấy tất cả bàn đang used
+     */
+    public List<RestaurantTable> getUsedTables() {
+        return restaurantTableRepository.findByStatus(TableStatus.Used);
+    }
+
+    /**
      * Thêm bàn mới
      */
     public RestaurantTable createTable(TableDTO tableDTO) {

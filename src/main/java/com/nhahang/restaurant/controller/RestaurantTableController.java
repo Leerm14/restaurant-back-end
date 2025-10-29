@@ -34,6 +34,9 @@ public class RestaurantTableController {
                 case "Cleaning":
                     tables = restaurantTableService.getCleaningTables();
                     break;
+                case "Used":
+                    tables = restaurantTableService.getUsedTables();
+                    break;
                 default:
                     return ResponseEntity.badRequest().build();
             }
