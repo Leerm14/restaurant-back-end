@@ -30,7 +30,7 @@ public class BookingService {
      * Tạo đặt bàn mới
      */
     @Transactional
-    public BookingDTO createBooking(BookingCreateRequest request) {
+    public Booking createBooking(BookingCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + request.getUserId()));
 
@@ -70,50 +70,49 @@ public class BookingService {
         table.setStatus(TableStatus.Booked);
         restaurantTableRepository.save(table);
 
-        return convertToDTO(savedBooking);
+        return savedBooking;
     }
 
     /**
      * Lấy tất cả đặt bàn
      */
-    public List<BookingDTO> getAllBookings() {
-        return bookingRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
     }
 
     /**
      * Lấy đặt bàn theo ID
      */
-    public BookingDTO getBookingById(Integer id) {
-        Booking booking = bookingRepository.findById(id)
+    public Booking getBookingById(Integer id) {
+        return bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đặt bàn với ID: " + id));
-        return convertToDTO(booking);
     }
 
     /**
      * Lấy đặt bàn theo user ID
      */
-    public List<BookingDTO> getBookingsByUserId(Integer userId) {
-        return bookingRepository.findByUserId(userId).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<Booking> getBookingsByUserId(Integer userId) {
+        return bookingRepository.findByUserId(userId);
     }
 
     /**
      * Lấy đặt bàn theo table ID
      */
-    public List<BookingDTO> getBookingsByTableId(Integer tableId) {
-        return bookingRepository.findByTableId(tableId).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<Booking> getBookingsByTableId(Integer tableId) {
+        return bookingRepository.findByTableId(tableId);
+    }
+    /**
+     * Lấy đặt bàn theo số điện thoại
+     */
+    public List<Booking> getBookingsByPhoneNumber(String phoneNumber) {
+        return bookingRepository.findByUserPhoneNumber(phoneNumber);
     }
 
     /**
      * Hủy đặt bàn
      */
     @Transactional
-    public BookingDTO cancelBooking(Integer id) {
+    public Booking cancelBooking(Integer id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đặt bàn với ID: " + id));
 
@@ -130,15 +129,14 @@ public class BookingService {
         table.setStatus(TableStatus.Available);
         restaurantTableRepository.save(table);
 
-        Booking updatedBooking = bookingRepository.save(booking);
-        return convertToDTO(updatedBooking);
+        return bookingRepository.save(booking);
     }
 
     /**
      * Hoàn thành đặt bàn
      */
     @Transactional
-    public BookingDTO completeBooking(Integer id) {
+    public Booking completeBooking(Integer id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đặt bàn với ID: " + id));
 
@@ -156,15 +154,14 @@ public class BookingService {
         table.setStatus(TableStatus.Booked);
         restaurantTableRepository.save(table);
 
-        Booking updatedBooking = bookingRepository.save(booking);
-        return convertToDTO(updatedBooking);
+        return bookingRepository.save(booking);
     }
 
     /**
      * Cập nhật thông tin đặt bàn
      */
     @Transactional
-    public BookingDTO updateBooking(Integer id, BookingCreateRequest request) {
+    public Booking updateBooking(Integer id, BookingCreateRequest request) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đặt bàn với ID: " + id));
 
@@ -200,8 +197,7 @@ public class BookingService {
         booking.setBookingTime(request.getBookingTime());
         booking.setNumGuests(request.getNumGuests());
 
-        Booking updatedBooking = bookingRepository.save(booking);
-        return convertToDTO(updatedBooking);
+        return bookingRepository.save(booking);
     }
 
     /**
@@ -217,21 +213,5 @@ public class BookingService {
         restaurantTableRepository.save(table);
 
         bookingRepository.delete(booking);
-    }
-
-    /**
-     * Chuyển đổi Entity sang DTO
-     */
-    private BookingDTO convertToDTO(Booking booking) {
-        BookingDTO dto = new BookingDTO();
-        dto.setId(booking.getId());
-        dto.setUserId(booking.getUser().getId());
-        dto.setUserName(booking.getUser().getFullName());
-        dto.setTableId(booking.getTable().getId());
-        dto.setTableName("Bàn " + booking.getTable().getTableNumber());
-        dto.setBookingTime(booking.getBookingTime());
-        dto.setNumGuests(booking.getNumGuests());
-        dto.setStatus(booking.getStatus());
-        return dto;
     }
 }

@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -60,8 +59,15 @@ public class BookingController {
         List<BookingDTO> bookings = bookingService.getBookingsByTableId(tableId);
         return ResponseEntity.ok(bookings);
     }
+     
+    // --- API 6: LẤY ĐẶT BÀN THEO PHONE NUMBER ---
+    @GetMapping("/phone/{phoneNumber}")
+    public ResponseEntity<List<BookingDTO>> getBookingsByPhoneNumber(@PathVariable String phoneNumber) {
+        List<BookingDTO> bookings = bookingService.getBookingsByPhoneNumber(phoneNumber);
+        return ResponseEntity.ok(bookings);
+    }
 
-    /// --- API 6: CẬP NHẬT ĐẶT BÀN ---
+    /// --- API 7: CẬP NHẬT ĐẶT BÀN ---
     @PutMapping("/{id}")
     public ResponseEntity<BookingDTO> updateBooking(
             @PathVariable Integer id, 
