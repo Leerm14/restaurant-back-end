@@ -18,10 +18,7 @@ public class BookingController {
 
     private final BookingService bookingService;
 
-    /**
-     * Tạo đặt bàn mới
-     * POST /api/bookings
-     */
+    // --- API 1: TẠO ĐẶT BÀN MỚI ---
     @PostMapping
     public ResponseEntity<BookingDTO> createBooking(@RequestBody BookingCreateRequest request) {
         try {
@@ -32,20 +29,14 @@ public class BookingController {
         }
     }
 
-    /**
-     * Lấy tất cả đặt bàn
-     * GET /api/bookings
-     */
+    // --- API 2: LẤY TẤT CẢ ĐẶT BÀN ---
     @GetMapping
     public ResponseEntity<List<BookingDTO>> getAllBookings() {
         List<BookingDTO> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);
     }
 
-    /**
-     * Lấy đặt bàn theo ID
-     * GET /api/bookings/{id}
-     */
+    // --- API 3: LẤY ĐẶT BÀN THEO ID ---
     @GetMapping("/{id}")
     public ResponseEntity<BookingDTO> getBookingById(@PathVariable Integer id) {
         try {
@@ -56,30 +47,21 @@ public class BookingController {
         }
     }
 
-    /**
-     * Lấy đặt bàn theo user ID
-     * GET /api/bookings/user/{userId}
-     */
+    // --- API 4: LẤY ĐẶT BÀN THEO USER ID ---
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<BookingDTO>> getBookingsByUserId(@PathVariable Integer userId) {
         List<BookingDTO> bookings = bookingService.getBookingsByUserId(userId);
         return ResponseEntity.ok(bookings);
     }
 
-    /**
-     * Lấy đặt bàn theo table ID
-     * GET /api/bookings/table/{tableId}
-     */
+    // --- API 5: LẤY ĐẶT BÀN THEO TABLE ID ---
     @GetMapping("/table/{tableId}")
     public ResponseEntity<List<BookingDTO>> getBookingsByTableId(@PathVariable Integer tableId) {
         List<BookingDTO> bookings = bookingService.getBookingsByTableId(tableId);
         return ResponseEntity.ok(bookings);
     }
 
-    /**
-     * Cập nhật đặt bàn
-     * PUT /api/bookings/{id}
-     */
+    /// --- API 6: CẬP NHẬT ĐẶT BÀN ---
     @PutMapping("/{id}")
     public ResponseEntity<BookingDTO> updateBooking(
             @PathVariable Integer id, 
@@ -92,10 +74,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Hủy đặt bàn
-     * PUT /api/bookings/{id}/cancel
-     */
+    /// --- API 7: HỦY ĐẶT BÀN ---
     @PutMapping("/{id}/cancel")
     public ResponseEntity<BookingDTO> cancelBooking(@PathVariable Integer id) {
         try {
@@ -106,10 +85,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Hoàn thành đặt bàn
-     * PUT /api/bookings/{id}/complete
-     */
+    /// --- API 8: HOÀN THÀNH ĐẶT BÀN ---
     @PutMapping("/{id}/complete")
     public ResponseEntity<BookingDTO> completeBooking(@PathVariable Integer id) {
         try {
@@ -120,10 +96,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Xóa đặt bàn
-     * DELETE /api/bookings/{id}
-     */
+    /// --- API 9: XÓA ĐẶT BÀN ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBooking(@PathVariable Integer id) {
         try {

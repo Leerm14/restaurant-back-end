@@ -37,18 +37,13 @@ public class BookingService {
         RestaurantTable table = restaurantTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
 
-        // Kiểm tra bàn có đủ chỗ không
         if (table.getCapacity() < request.getNumGuests()) {
             throw new RuntimeException("Bàn không đủ chỗ. Sức chứa: " + table.getCapacity() + 
                     ", Số khách: " + request.getNumGuests());
         }
-
-        // Kiểm tra bàn có trống không
         if (table.getStatus() != TableStatus.Available) {
             throw new RuntimeException("Bàn hiện không khả dụng");
         }
-
-        // Kiểm tra thời gian đặt bàn
         if (request.getBookingTime().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Thời gian đặt bàn phải là thời gian trong tương lai");
         }
