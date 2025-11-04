@@ -2,6 +2,7 @@ package com.nhahang.restaurant.controller;
 
 import com.nhahang.restaurant.dto.BookingCreateRequest;
 import com.nhahang.restaurant.dto.BookingDTO;
+import com.nhahang.restaurant.model.entity.Booking;
 import com.nhahang.restaurant.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,9 +20,9 @@ public class BookingController {
 
     // --- API 1: TẠO ĐẶT BÀN MỚI ---
     @PostMapping
-    public ResponseEntity<BookingDTO> createBooking(@RequestBody BookingCreateRequest request) {
+    public ResponseEntity<Booking> createBooking(@RequestBody BookingCreateRequest request) {
         try {
-            BookingDTO booking = bookingService.createBooking(request);
+            Booking booking = bookingService.createBooking(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -30,16 +31,16 @@ public class BookingController {
 
     // --- API 2: LẤY TẤT CẢ ĐẶT BÀN ---
     @GetMapping
-    public ResponseEntity<List<BookingDTO>> getAllBookings() {
-        List<BookingDTO> bookings = bookingService.getAllBookings();
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        List<Booking> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);
     }
 
     // --- API 3: LẤY ĐẶT BÀN THEO ID ---
     @GetMapping("/{id}")
-    public ResponseEntity<BookingDTO> getBookingById(@PathVariable Integer id) {
+    public ResponseEntity<Booking> getBookingById(@PathVariable Integer id) {
         try {
-            BookingDTO booking = bookingService.getBookingById(id);
+            Booking booking = bookingService.getBookingById(id);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -48,32 +49,32 @@ public class BookingController {
 
     // --- API 4: LẤY ĐẶT BÀN THEO USER ID ---
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<BookingDTO>> getBookingsByUserId(@PathVariable Integer userId) {
-        List<BookingDTO> bookings = bookingService.getBookingsByUserId(userId);
+    public ResponseEntity<List<Booking>> getBookingsByUserId(@PathVariable Integer userId) {
+        List<Booking> bookings = bookingService.getBookingsByUserId(userId);
         return ResponseEntity.ok(bookings);
     }
 
     // --- API 5: LẤY ĐẶT BÀN THEO TABLE ID ---
     @GetMapping("/table/{tableId}")
-    public ResponseEntity<List<BookingDTO>> getBookingsByTableId(@PathVariable Integer tableId) {
-        List<BookingDTO> bookings = bookingService.getBookingsByTableId(tableId);
+    public ResponseEntity<List<Booking>> getBookingsByTableId(@PathVariable Integer tableId) {
+        List<Booking> bookings = bookingService.getBookingsByTableId(tableId);
         return ResponseEntity.ok(bookings);
     }
      
     // --- API 6: LẤY ĐẶT BÀN THEO PHONE NUMBER ---
     @GetMapping("/phone/{phoneNumber}")
-    public ResponseEntity<List<BookingDTO>> getBookingsByPhoneNumber(@PathVariable String phoneNumber) {
-        List<BookingDTO> bookings = bookingService.getBookingsByPhoneNumber(phoneNumber);
+    public ResponseEntity<List<Booking>> getBookingsByPhoneNumber(@PathVariable String phoneNumber) {
+        List<Booking> bookings = bookingService.getBookingsByPhoneNumber(phoneNumber);
         return ResponseEntity.ok(bookings);
     }
 
     /// --- API 7: CẬP NHẬT ĐẶT BÀN ---
     @PutMapping("/{id}")
-    public ResponseEntity<BookingDTO> updateBooking(
+    public ResponseEntity<Booking> updateBooking(
             @PathVariable Integer id, 
             @RequestBody BookingCreateRequest request) {
         try {
-            BookingDTO booking = bookingService.updateBooking(id, request);
+            Booking booking = bookingService.updateBooking(id, request);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -82,9 +83,9 @@ public class BookingController {
 
     /// --- API 7: HỦY ĐẶT BÀN ---
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<BookingDTO> cancelBooking(@PathVariable Integer id) {
+    public ResponseEntity<Booking> cancelBooking(@PathVariable Integer id) {
         try {
-            BookingDTO booking = bookingService.cancelBooking(id);
+            Booking booking = bookingService.cancelBooking(id);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -93,9 +94,9 @@ public class BookingController {
 
     /// --- API 8: HOÀN THÀNH ĐẶT BÀN ---
     @PutMapping("/{id}/complete")
-    public ResponseEntity<BookingDTO> completeBooking(@PathVariable Integer id) {
+    public ResponseEntity<Booking> completeBooking(@PathVariable Integer id) {
         try {
-            BookingDTO booking = bookingService.completeBooking(id);
+            Booking booking = bookingService.completeBooking(id);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
