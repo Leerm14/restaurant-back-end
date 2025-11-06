@@ -1,22 +1,34 @@
 package com.nhahang.restaurant.config;
 
+import org.springframework.beans.factory.annotation.Autowired; 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy; 
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; 
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) 
 public class SecurityConfig {
+
+    @Autowired
+    private FirebaseTokenFilter firebaseTokenFilter; 
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                .anyRequest().permitAll()  // Cho phép tất cả requests không cần đăng nhập
+                // .anyRequest().permitAll() // Cấu hình cũ
+                .anyRequest().authenticated()  
             )
-            .csrf(csrf -> csrf.disable());  // Tắt CSRF cho API testing
+            .csrf(csrf -> csrf.disable())  
+            .sessionManagement(session -> 
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }
