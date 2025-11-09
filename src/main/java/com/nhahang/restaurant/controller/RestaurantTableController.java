@@ -70,6 +70,7 @@ public class RestaurantTableController {
             return ResponseEntity.notFound().build();
         }
     }
+    
     // --- API 5: SỬA TRẠNG THÁI BÀN ---
     @PatchMapping("/{id}/status")
     public ResponseEntity<RestaurantTable> updateTableStatus(@PathVariable Integer id, @RequestParam String status) {

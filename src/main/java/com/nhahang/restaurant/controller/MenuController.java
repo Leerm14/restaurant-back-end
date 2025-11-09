@@ -84,7 +84,7 @@ public class MenuController {
             return ResponseEntity.notFound().build();
         }
     }
-
+    // --- API 5: XÓA MỘT MÓN ĂN (Dùng cho Admin) ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMenuItem(@PathVariable Integer id) {
         try {
@@ -93,63 +93,5 @@ public class MenuController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    // --- API 5: UPLOAD ẢNH CHO MÓN ĂN ---
-    @PostMapping("/{id}/upload-image")
-    public ResponseEntity<Map<String, String>> uploadMenuItemImage(
-            @PathVariable Integer id, 
-            @RequestParam("image") MultipartFile file) {
-        
-        Map<String, String> response = new HashMap<>();
-        
-        try {
-            var menuItem = menuService.getMenuItemById(id);
-            if (menuItem.isEmpty()) {
-                response.put("error", "Không tìm thấy món ăn với ID: " + id);
-                return ResponseEntity.notFound().build();
-            }
-
-            if (file.isEmpty()) {
-                response.put("error", "File ảnh không được để trống");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-
-            String contentType = file.getContentType();
-            if (!isImageFile(contentType)) {
-                response.put("error", "Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp)");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            if (file.getSize() > 5 * 1024 * 1024) {
-                response.put("error", "Kích thước file không được vượt quá 5MB");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // 5. Lưu file và cập nhật imageUrl cho món ăn
-            String imageUrl = menuService.uploadImageForMenuItem(id, file);
-            
-            response.put("message", "Upload ảnh thành công");
-            response.put("imageUrl", imageUrl);
-            response.put("menuItemId", id.toString());
-
-            return ResponseEntity.ok(response);
-
-        } catch (RuntimeException e) {
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
-
-    // --- HELPER METHOD ---
-    private boolean isImageFile(String contentType) {
-        return contentType != null && (
-                contentType.equals("image/jpeg") ||
-                contentType.equals("image/jpg") ||
-                contentType.equals("image/png") ||
-                contentType.equals("image/gif") ||
-                contentType.equals("image/webp")
-        );
     }
 }
