@@ -11,6 +11,9 @@ import com.nhahang.restaurant.repository.BookingRepository;
 import com.nhahang.restaurant.repository.RestaurantTableRepository;
 import com.nhahang.restaurant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,6 +81,15 @@ public class BookingService {
      */
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
+    }
+
+    /**
+     * Lấy tất cả đặt bàn với phân trang
+     */
+    public List<Booking> getAllBookings(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Booking> bookingPage = bookingRepository.findAll(pageable);
+        return bookingPage.getContent();
     }
 
     /**

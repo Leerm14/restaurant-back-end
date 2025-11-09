@@ -12,6 +12,9 @@ import com.nhahang.restaurant.model.entity.Payment;
 import com.nhahang.restaurant.repository.OrderRepository;
 import com.nhahang.restaurant.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,18 @@ public class PaymentService {
     @Transactional
     public List<PaymentDTO> getAllPayments() {
         return paymentRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy tất cả thanh toán với phân trang
+     */
+    @Transactional
+    public List<PaymentDTO> getAllPayments(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Payment> paymentPage = paymentRepository.findAll(pageable);
+        return paymentPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -73,6 +88,25 @@ public class PaymentService {
                     .filter(p -> p.getStatus() == paymentStatus)
                     .collect(Collectors.toList());
             return payments.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái thanh toán không hợp lệ: " + status);
+        }
+    }
+
+    /**
+     * Lấy thanh toán theo trạng thái với phân trang
+     */
+    @Transactional
+    public List<PaymentDTO> getPaymentsByStatus(String status, int page, int size) {
+        try {
+            PaymentStatus paymentStatus = PaymentStatus.valueOf(status);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Payment> paymentPage = paymentRepository.findAll(pageable);
+            
+            return paymentPage.getContent().stream()
+                    .filter(p -> p.getStatus() == paymentStatus)
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
         } catch (IllegalArgumentException e) {

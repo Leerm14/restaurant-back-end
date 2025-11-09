@@ -32,8 +32,16 @@ public class BookingController {
     // --- API 2: LẤY TẤT CẢ ĐẶT BÀN ---
     @GetMapping
     @PreAuthorize("haspermission('READ_BOOKING')")
-    public ResponseEntity<List<Booking>> getAllBookings() {
-        List<Booking> bookings = bookingService.getAllBookings();
+    public ResponseEntity<List<Booking>> getAllBookings(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        // Validation: page >= 0, size > 0 và size <= 100
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100;
+        
+        List<Booking> bookings = bookingService.getAllBookings(page, size);
         return ResponseEntity.ok(bookings);
     }
 

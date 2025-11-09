@@ -1,6 +1,9 @@
 package com.nhahang.restaurant.service;
 import com.nhahang.restaurant.dto.TableDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.nhahang.restaurant.repository.RestaurantTableRepository;
 import com.nhahang.restaurant.model.entity.RestaurantTable;
@@ -30,6 +33,16 @@ public class RestaurantTableService {
     public List<RestaurantTable> getAvailableTables() {
         return restaurantTableRepository.findByStatus(TableStatus.Available);
     }
+
+    /**
+     * Lấy tất cả bàn theo status với phân trang
+     */
+    public List<RestaurantTable> getTablesByStatus(TableStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<RestaurantTable> tablePage = restaurantTableRepository.findByStatus(status, pageable);
+        return tablePage.getContent();
+    }
+
     /**
      * Lấy tất cả bàn đang booked
      */

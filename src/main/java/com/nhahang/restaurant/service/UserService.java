@@ -8,6 +8,9 @@ import com.nhahang.restaurant.model.entity.User;
 import com.nhahang.restaurant.repository.RoleRepository;
 import com.nhahang.restaurant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,18 @@ public class UserService {
     @Transactional
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy tất cả người dùng với phân trang
+     */
+    @Transactional
+    public List<UserDTO> getAllUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage = userRepository.findAll(pageable);
+        return userPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -80,6 +95,23 @@ public class UserService {
                 .filter(user -> user.getRole() != null && user.getRole().getId().equals(role.getId()))
                 .collect(Collectors.toList());
         return users.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     *  Lấy người dùng theo roleName với phân trang
+     */
+    @Transactional
+    public List<UserDTO> getUsersByRoleName(String roleName, int page, int size) {
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + roleName));
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage = userRepository.findAll(pageable);
+        
+        return userPage.getContent().stream()
+                .filter(user -> user.getRole() != null && user.getRole().getId().equals(role.getId()))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

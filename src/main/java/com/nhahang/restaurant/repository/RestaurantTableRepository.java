@@ -1,6 +1,8 @@
 package com.nhahang.restaurant.repository;
 
 import com.nhahang.restaurant.model.entity.RestaurantTable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,4 +15,6 @@ public interface RestaurantTableRepository extends JpaRepository<RestaurantTable
     Optional<RestaurantTable> findByTableNumber(int tableNumber);
 
     List<RestaurantTable> findByStatus(com.nhahang.restaurant.model.TableStatus status);
+    
+    Page<RestaurantTable> findByStatus(com.nhahang.restaurant.model.TableStatus status, Pageable pageable);
 }

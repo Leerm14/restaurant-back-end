@@ -7,6 +7,9 @@ import com.nhahang.restaurant.model.OrderType;
 import com.nhahang.restaurant.model.entity.*;
 import com.nhahang.restaurant.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,18 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderDTO> getAllOrders() {
         return orderRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy tất cả đơn hàng với phân trang
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getAllOrders(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Order> orderPage = orderRepository.findAll(pageable);
+        return orderPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -83,6 +98,25 @@ public class OrderService {
                     .filter(order -> order.getStatus() == orderStatus)
                     .collect(Collectors.toList());
             return orders.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái đơn hàng không hợp lệ: " + status);
+        }
+    }
+
+    /**
+     * Lấy đơn hàng theo trạng thái với phân trang
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getOrdersByStatus(String status, int page, int size) {
+        try {
+            OrderStatus orderStatus = OrderStatus.valueOf(status);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Order> orderPage = orderRepository.findAll(pageable);
+            
+            return orderPage.getContent().stream()
+                    .filter(order -> order.getStatus() == orderStatus)
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
         } catch (IllegalArgumentException e) {

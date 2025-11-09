@@ -21,27 +21,26 @@ public class RestaurantTableController {
     @GetMapping
     @PreAuthorize("haspermission('READ_TABLE')")
     public ResponseEntity<List<RestaurantTable>> getTablesByStatus(
-            @RequestParam(value = "status", required = false) String status) {
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        // Validation
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100;
+        
         List<RestaurantTable> tables;
         if (status == null) {
             tables = restaurantTableService.getAllTables();
         } else {
-            switch (status) {
-                case "Available":
-                    tables = restaurantTableService.getAvailableTables();
-                    break;
-                case "Booked":
-                    tables = restaurantTableService.getBookedTables();
-                    break;
-                case "Cleaning":
-                    tables = restaurantTableService.getCleaningTables();
-                    break;
-                case "Used":
-                    tables = restaurantTableService.getUsedTables();
-                    break;
-                default:
-                    return ResponseEntity.badRequest().build();
+            com.nhahang.restaurant.model.TableStatus tableStatus;
+            try {
+                tableStatus = com.nhahang.restaurant.model.TableStatus.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
             }
+            tables = restaurantTableService.getTablesByStatus(tableStatus, page, size);
         }
         return ResponseEntity.ok(tables);
     }
