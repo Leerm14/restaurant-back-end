@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -251,5 +253,64 @@ public class OrderService {
         dto.setPriceAtOrder(orderItem.getPriceAtOrder());
         dto.setSubtotal(orderItem.getPriceAtOrder().multiply(BigDecimal.valueOf(orderItem.getQuantity())));
         return dto;
+    }
+
+    /**
+     * Lấy thống kê đơn hàng theo tháng
+     */
+    @Transactional(readOnly = true)
+    public MonthlyOrderStatsDTO getMonthlyOrderStats(Integer year, Integer month) {
+        // Tạo khoảng thời gian cho tháng
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDateTime startDate = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime endDate = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        // Lấy tất cả đơn hàng trong tháng
+        List<Order> orders = orderRepository.findByCreatedAtBetween(startDate, endDate);
+
+        MonthlyOrderStatsDTO stats = new MonthlyOrderStatsDTO();
+        stats.setYear(year);
+        stats.setMonth(month);
+        stats.setTotalOrders((long) orders.size());
+
+        // Đếm số đơn hàng theo trạng thái
+        long completedOrders = orders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.Completed)
+                .count();
+        stats.setCompletedOrders(completedOrders);
+
+        long cancelledOrders = orders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.Cancelled)
+                .count();
+        stats.setCancelledOrders(cancelledOrders);
+
+        long pendingOrders = orders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.Pending)
+                .count();
+        stats.setPendingOrders(pendingOrders);
+
+        // Tính tổng doanh thu từ các đơn hàng đã hoàn thành
+        BigDecimal totalRevenue = orders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.Completed)
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        stats.setTotalRevenue(totalRevenue);
+
+        return stats;
+    }
+
+    /**
+     * Lấy thống kê đơn hàng cho nhiều tháng
+     */
+    @Transactional(readOnly = true)
+    public List<MonthlyOrderStatsDTO> getMonthlyOrderStatsRange(Integer year, Integer fromMonth, Integer toMonth) {
+        List<MonthlyOrderStatsDTO> statsList = new ArrayList<>();
+        
+        for (int month = fromMonth; month <= toMonth; month++) {
+            MonthlyOrderStatsDTO stats = getMonthlyOrderStats(year, month);
+            statsList.add(stats);
+        }
+        
+        return statsList;
     }
 }

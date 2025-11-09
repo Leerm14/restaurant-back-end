@@ -7,6 +7,7 @@ import com.nhahang.restaurant.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class UserController {
     private final UserService userService;
     // --- API 1: LẤY TẤT CẢ NGƯỜI DÙNG ---
     @GetMapping
+    @PreAuthorize("haspermission('READ_USER')")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         try {
             List<UserDTO> users = userService.getAllUsers();
@@ -29,6 +31,7 @@ public class UserController {
     }
     // --- API 2: LẤY NGƯỜI DÙNG THEO ID ---
     @GetMapping("/{id}")
+    @PreAuthorize("haspermission('READ_USER')")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Integer id) {
         try {
             UserDTO user = userService.getUserById(id);
@@ -41,6 +44,7 @@ public class UserController {
     }
     // --- API 3: LẤY NGƯỜI DÙNG THEO UID ---
     @GetMapping("/uid/{uid}")
+    @PreAuthorize("haspermission('READ_USER')")
     public ResponseEntity<UserDTO> getUserByUid(@PathVariable String uid) {
         try {
             UserDTO user = userService.getUserByUid(uid);
@@ -54,6 +58,7 @@ public class UserController {
 
     // --- API 4: LẤY NGƯỜI DÙNG THEO EMAIL ---
     @GetMapping("/email/{email}")
+    @PreAuthorize("haspermission('READ_USER')")
     public ResponseEntity<UserDTO> getUserByEmail(@PathVariable String email) {
         try {
             UserDTO user = userService.getUserByEmail(email);
@@ -66,6 +71,7 @@ public class UserController {
     }
  // --- API 5: LẤY NGƯỜI DÙNG THEO SỐ ĐIỆN THOẠI ---
     @GetMapping("/phone/{phoneNumber}")
+    @PreAuthorize("haspermission('READ_USER')")
     public ResponseEntity<UserDTO> getUserByPhoneNumber(@PathVariable String phoneNumber) {
         try {
             UserDTO user = userService.getUserByPhoneNumber(phoneNumber);
@@ -78,6 +84,7 @@ public class UserController {
     }
     // --- API 6: LẤY NGƯỜI DÙNG THEO ROLE NAME ---
     @GetMapping("/role/{roleName}")
+    @PreAuthorize("haspermission('READ_USER')")
     public ResponseEntity<List<UserDTO>> getUsersByRoleName(@PathVariable String roleName) {
         try {
             List<UserDTO> users = userService.getUsersByRoleName(roleName);
@@ -91,6 +98,7 @@ public class UserController {
 
     // --- API 7: TẠO NGƯỜI DÙNG MỚI ---
     @PostMapping
+    @PreAuthorize("haspermission('CREATE_USER')")
     public ResponseEntity<UserDTO> createUser(@RequestBody UserCreateRequest request) {
         try {
             UserDTO createdUser = userService.createUser(request);
@@ -103,6 +111,7 @@ public class UserController {
     }
    // --- API 7: CẬP NHẬT NGƯỜI DÙNG ---
     @PutMapping("/{id}")
+    @PreAuthorize("haspermission('UPDATE_USER')")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Integer id,
             @RequestBody UserUpdateRequest request) {
@@ -117,6 +126,7 @@ public class UserController {
     }
     // --- API 8: XÓA NGƯỜI DÙNG ---
     @DeleteMapping("/{id}")
+    @PreAuthorize("haspermission('DELETE_USER')")
     public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
         try {
             userService.deleteUser(id);

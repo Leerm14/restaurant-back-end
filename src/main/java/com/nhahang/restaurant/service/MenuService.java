@@ -1,19 +1,23 @@
 package com.nhahang.restaurant.service;
 
+import com.nhahang.restaurant.dto.BestSellingItemDTO;
 import com.nhahang.restaurant.dto.MenuItemDTO;
 import com.nhahang.restaurant.model.MenuItemStatus;
 import com.nhahang.restaurant.model.entity.MenuItem;
 import com.nhahang.restaurant.repository.MenuItemRepository;
 import com.nhahang.restaurant.repository.CategoryRepository;
+import com.nhahang.restaurant.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class MenuService {
     private final MenuItemRepository menuItemRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderItemRepository orderItemRepository;
 
 
     /**
@@ -185,5 +190,26 @@ public class MenuService {
             return ".jpg";
         }
         return filename.substring(filename.lastIndexOf("."));
+    }
+
+    /**
+     * Logic: Lấy danh sách món ăn bán chạy nhất
+     */
+    public List<BestSellingItemDTO> getBestSellingItems(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Object[]> results = orderItemRepository.findBestSellingItems(pageable);
+        
+        return results.stream().map(row -> {
+            BestSellingItemDTO dto = new BestSellingItemDTO();
+            dto.setMenuItemId((Integer) row[0]);
+            dto.setMenuItemName((String) row[1]);
+            dto.setDescription((String) row[2]);
+            dto.setImageUrl((String) row[3]);
+            dto.setPrice((BigDecimal) row[4]);
+            dto.setCategoryName((String) row[5]);
+            dto.setTotalQuantitySold((Long) row[6]);
+            dto.setTotalRevenue((BigDecimal) row[7]);
+            return dto;
+        }).collect(Collectors.toList());
     }
 }

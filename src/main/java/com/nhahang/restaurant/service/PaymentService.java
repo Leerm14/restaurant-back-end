@@ -2,6 +2,8 @@ package com.nhahang.restaurant.service;
 
 import com.nhahang.restaurant.dto.PaymentCreateRequest;
 import com.nhahang.restaurant.dto.PaymentDTO;
+import com.nhahang.restaurant.dto.PaymentMethodDistributionDTO;
+import com.nhahang.restaurant.dto.RevenueReportDTO;
 import com.nhahang.restaurant.model.OrderStatus;
 import com.nhahang.restaurant.model.PaymentMethod;
 import com.nhahang.restaurant.model.PaymentStatus;
@@ -14,7 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -255,5 +261,137 @@ public class PaymentService {
         dto.setTransactionId(payment.getTransactionId());
         dto.setPaymentTime(payment.getPaymentTime());
         return dto;
+    }
+
+    /**
+     * Lấy báo cáo doanh thu theo khoảng thời gian
+     */
+    @Transactional
+    public RevenueReportDTO getRevenueReport(LocalDateTime fromDate, LocalDateTime toDate) {
+        // Lấy tất cả payment thành công trong khoảng thời gian
+        List<Payment> payments = paymentRepository.findByStatusAndPaymentTimeBetween(
+                PaymentStatus.Successful, fromDate, toDate);
+
+        RevenueReportDTO report = new RevenueReportDTO();
+        report.setFromDate(fromDate);
+        report.setToDate(toDate);
+
+        if (payments.isEmpty()) {
+            // Nếu không có giao dịch nào, trả về report với giá trị 0
+            report.setTotalRevenue(BigDecimal.ZERO);
+            report.setTotalTransactions(0L);
+            report.setAverageTransactionValue(BigDecimal.ZERO);
+            report.setCashRevenue(BigDecimal.ZERO);
+            report.setCashTransactions(0L);
+            report.setQrCodeRevenue(BigDecimal.ZERO);
+            report.setQrCodeTransactions(0L);
+            report.setCreditCardRevenue(BigDecimal.ZERO);
+            report.setCreditCardTransactions(0L);
+            return report;
+        }
+
+        // Tính tổng doanh thu
+        BigDecimal totalRevenue = payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Tính tổng số giao dịch
+        long totalTransactions = payments.size();
+
+        // Tính giá trị trung bình mỗi giao dịch
+        BigDecimal averageTransactionValue = totalRevenue.divide(
+                BigDecimal.valueOf(totalTransactions), 2, RoundingMode.HALF_UP);
+
+        report.setTotalRevenue(totalRevenue);
+        report.setTotalTransactions(totalTransactions);
+        report.setAverageTransactionValue(averageTransactionValue);
+
+        // Phân loại theo phương thức thanh toán
+        // Cash
+        List<Payment> cashPayments = payments.stream()
+                .filter(p -> p.getPaymentMethod() == PaymentMethod.Cash)
+                .collect(Collectors.toList());
+        report.setCashRevenue(cashPayments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        report.setCashTransactions((long) cashPayments.size());
+
+        // QR Code
+        List<Payment> qrCodePayments = payments.stream()
+                .filter(p -> p.getPaymentMethod() == PaymentMethod.QR_Code)
+                .collect(Collectors.toList());
+        report.setQrCodeRevenue(qrCodePayments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        report.setQrCodeTransactions((long) qrCodePayments.size());
+
+        // Credit Card
+        List<Payment> creditCardPayments = payments.stream()
+                .filter(p -> p.getPaymentMethod() == PaymentMethod.Credit_Card)
+                .collect(Collectors.toList());
+        report.setCreditCardRevenue(creditCardPayments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        report.setCreditCardTransactions((long) creditCardPayments.size());
+
+        return report;
+    }
+
+    /**
+     * Lấy phân phối phương thức thanh toán
+     */
+    @Transactional
+    public List<PaymentMethodDistributionDTO> getPaymentMethodDistribution(
+            LocalDateTime fromDate, LocalDateTime toDate) {
+        
+        // Lấy tất cả payment thành công trong khoảng thời gian
+        List<Payment> payments = paymentRepository.findByStatusAndPaymentTimeBetween(
+                PaymentStatus.Successful, fromDate, toDate);
+
+        if (payments.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Tính tổng tiền
+        BigDecimal grandTotal = payments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Nhóm theo phương thức thanh toán
+        Map<PaymentMethod, List<Payment>> groupedByMethod = payments.stream()
+                .collect(Collectors.groupingBy(Payment::getPaymentMethod));
+
+        // Tạo danh sách kết quả
+        List<PaymentMethodDistributionDTO> distribution = new ArrayList<>();
+
+        for (Map.Entry<PaymentMethod, List<Payment>> entry : groupedByMethod.entrySet()) {
+            PaymentMethod method = entry.getKey();
+            List<Payment> methodPayments = entry.getValue();
+
+            PaymentMethodDistributionDTO dto = new PaymentMethodDistributionDTO();
+            dto.setPaymentMethod(method.name());
+            dto.setTransactionCount((long) methodPayments.size());
+
+            BigDecimal totalAmount = methodPayments.stream()
+                    .map(Payment::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            dto.setTotalAmount(totalAmount);
+
+            // Tính phần trăm
+            BigDecimal percentage = BigDecimal.ZERO;
+            if (grandTotal.compareTo(BigDecimal.ZERO) > 0) {
+                percentage = totalAmount
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(grandTotal, 2, RoundingMode.HALF_UP);
+            }
+            dto.setPercentage(percentage);
+
+            distribution.add(dto);
+        }
+
+        // Sắp xếp theo số lượng giao dịch giảm dần
+        distribution.sort((a, b) -> b.getTransactionCount().compareTo(a.getTransactionCount()));
+
+        return distribution;
     }
 }
