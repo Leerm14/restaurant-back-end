@@ -9,13 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.multipart.MultipartFile;
 
 
@@ -91,7 +89,27 @@ public class MenuController {
             return ResponseEntity.notFound().build();
         }
     }
-    // --- API 5: XÓA MỘT MÓN ĂN (Dùng cho Admin) ---
+    // --- API 5: UPLOAD ẢNH CHO MÓN ĂN (Dùng cho Admin) ---
+    @PutMapping("/{id}/image")
+    @PreAuthorize("haspermission('UPDATE_MENU')")
+    public ResponseEntity<Map<String, String>> uploadMenuItemImage(
+            @PathVariable Integer id, 
+            @RequestParam("file") MultipartFile file) {
+        
+        try {
+            String imageUrl = menuService.uploadImageForMenuItem(id, file);
+            Map<String, String> response = new HashMap<>();
+            response.put("imageUrl", imageUrl);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+    // --- API 6: XÓA MỘT MÓN ĂN (Dùng cho Admin) ---
     @DeleteMapping("/{id}")
     @PreAuthorize("haspermission('DELETE_MENU')")
     public ResponseEntity<Void> deleteMenuItem(@PathVariable Integer id) {

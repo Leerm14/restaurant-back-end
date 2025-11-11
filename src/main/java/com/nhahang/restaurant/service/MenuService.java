@@ -12,16 +12,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import java.util.Map;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.io.IOException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +29,7 @@ public class MenuService {
     private final MenuItemRepository menuItemRepository;
     private final CategoryRepository categoryRepository;
     private final OrderItemRepository orderItemRepository;
+    private final Cloudinary cloudinary;
 
 
     /**
@@ -149,49 +148,29 @@ public class MenuService {
          menuItemRepository.delete(existingMenuItem);
     }
 
-    private static final String UPLOAD_DIR = "uploads/images/";
-
     /**
-     * Logic: Upload ảnh cho món ăn và cập nhật imageUrl
+     * Logic: Upload ảnh cho món ăn và cập nhật imageUrl (ĐÃ THAY ĐỔI)
      */
     public String uploadImageForMenuItem(Integer menuItemId, MultipartFile file) {
         try {
             MenuItem menuItem = menuItemRepository.findById(menuItemId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + menuItemId));
 
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            String originalFilename = file.getOriginalFilename();
-            String fileExtension = getFileExtension(originalFilename);
-            String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
-
-            Path filePath = uploadPath.resolve(uniqueFilename);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            String imageUrl = "/api/upload/images/" + uniqueFilename;
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                file.getBytes(), 
+                ObjectUtils.asMap(
+                    "resource_type", "auto",
+                    "folder", "restaurant_menu"
+                )
+            );
+            String imageUrl = (String) uploadResult.get("secure_url");
             menuItem.setImageUrl(imageUrl);
             menuItemRepository.save(menuItem);
-
             return imageUrl;
-
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi lưu file ảnh: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi upload ảnh lên Cloudinary: " + e.getMessage());
         }
     }
-
-    /**
-     * Helper method: Lấy file extension từ filename
-     */
-    private String getFileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return ".jpg";
-        }
-        return filename.substring(filename.lastIndexOf("."));
-    }
-
     /**
      * Logic: Lấy danh sách món ăn bán chạy nhất
      */
