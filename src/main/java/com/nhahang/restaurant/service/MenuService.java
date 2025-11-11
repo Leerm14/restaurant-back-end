@@ -97,14 +97,20 @@ public class MenuService {
     /**
      * Logic: Tạo món ăn mới
     */
-    public MenuItem createMenuItem(MenuItemDTO menuItemDTO) {
+    public MenuItem createMenuItem(MenuItemDTO menuItemDTO, MultipartFile file) {
+        // 1. Upload ảnh LÊN TRƯỚC
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Ảnh món ăn là bắt buộc khi tạo mới");
+        }
+        String imageUrl = uploadToCloudinary(file);
+        menuItemDTO.setImageUrl(imageUrl); 
         var category = categoryRepository.findById(menuItemDTO.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category với ID: " + menuItemDTO.getCategoryId()));
 
         MenuItem newMenuItem = new MenuItem();
         newMenuItem.setName(menuItemDTO.getName());
         newMenuItem.setDescription(menuItemDTO.getDescription());
-        newMenuItem.setImageUrl(menuItemDTO.getImageUrl());
+        newMenuItem.setImageUrl(menuItemDTO.getImageUrl()); 
         newMenuItem.setPrice(menuItemDTO.getPrice());
         newMenuItem.setStatus(MenuItemStatus.valueOf(menuItemDTO.getStatus()));
         newMenuItem.setCategory(category); 
@@ -113,9 +119,9 @@ public class MenuService {
     }
 
     /**
-     * Logic: Cập nhật một món ăn
+     * Logic: Cập nhật một món ăn 
     */
-    public MenuItem updateMenuItem(Integer id, MenuItemDTO menuItemDTO) {
+    public MenuItem updateMenuItem(Integer id, MenuItemDTO menuItemDTO, MultipartFile file) {
         MenuItem existingMenuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + id));
 
@@ -129,16 +135,17 @@ public class MenuService {
             throw new RuntimeException("Status không hợp lệ: " + menuItemDTO.getStatus());
         }
 
+        if (file != null && !file.isEmpty()) {
+            String newImageUrl = uploadToCloudinary(file);
+            existingMenuItem.setImageUrl(newImageUrl); 
+        }
         existingMenuItem.setName(menuItemDTO.getName());
         existingMenuItem.setDescription(menuItemDTO.getDescription());
-        existingMenuItem.setImageUrl(menuItemDTO.getImageUrl());
         existingMenuItem.setPrice(menuItemDTO.getPrice());
         existingMenuItem.setStatus(status);
         existingMenuItem.setCategory(category);
-
         return menuItemRepository.save(existingMenuItem);
     }
-    
     /** 
      * Logic: Xóa một món ăn theo ID 
     */
@@ -149,24 +156,18 @@ public class MenuService {
     }
 
     /**
-     * Logic: Upload ảnh cho món ăn và cập nhật imageUrl (ĐÃ THAY ĐỔI)
+     * Phương thức private để xử lý upload (TÁI SỬ DỤNG)
      */
-    public String uploadImageForMenuItem(Integer menuItemId, MultipartFile file) {
+    private String uploadToCloudinary(MultipartFile file) {
         try {
-            MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem với ID: " + menuItemId));
-
             Map<String, Object> uploadResult = cloudinary.uploader().upload(
                 file.getBytes(), 
                 ObjectUtils.asMap(
                     "resource_type", "auto",
-                    "folder", "restaurant_menu"
+                    "folder", "restaurant_menu" // Thư mục trên Cloudinary
                 )
             );
-            String imageUrl = (String) uploadResult.get("secure_url");
-            menuItem.setImageUrl(imageUrl);
-            menuItemRepository.save(menuItem);
-            return imageUrl;
+            return (String) uploadResult.get("secure_url");
         } catch (IOException e) {
             throw new RuntimeException("Lỗi khi upload ảnh lên Cloudinary: " + e.getMessage());
         }

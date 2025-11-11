@@ -68,48 +68,34 @@ public class MenuController {
     // --- API 3: TẠO MỘT MÓN ĂN MỚI (Dùng cho Admin) ---
     @PostMapping 
     @PreAuthorize("haspermission('CREATE_MENU')")
-    public ResponseEntity<MenuItem> createMenuItem(@RequestBody MenuItemDTO menuItemDTO) {
+    public ResponseEntity<MenuItem> createMenuItem(
+            @ModelAttribute MenuItemDTO menuItemDTO, 
+            @RequestParam("file") MultipartFile file) { 
         try {
-            MenuItem createdItem = menuService.createMenuItem(menuItemDTO);
+
+            MenuItem createdItem = menuService.createMenuItem(menuItemDTO, file);
             return new ResponseEntity<>(createdItem, HttpStatus.CREATED); 
-        } catch (RuntimeException e) {
+        } catch (Exception e) { 
+            System.err.println("Error creating menu item: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-
     // --- API 4: CẬP NHẬT MỘT MÓN ĂN (Dùng cho Admin) ---
     @PutMapping("/{id}")
     @PreAuthorize("haspermission('UPDATE_MENU')")
-    public ResponseEntity<MenuItem> updateMenuItem(@PathVariable Integer id, @RequestBody MenuItemDTO menuItemDTO) {
+    public ResponseEntity<MenuItem> updateMenuItem(
+            @PathVariable Integer id, 
+            @ModelAttribute MenuItemDTO menuItemDTO, 
+            @RequestParam(value = "file", required = false) MultipartFile file) { 
         try {
-            MenuItem updatedItem = menuService.updateMenuItem(id, menuItemDTO);
+            MenuItem updatedItem = menuService.updateMenuItem(id, menuItemDTO, file);
             return ResponseEntity.ok(updatedItem);
         } catch (RuntimeException e) {
             System.err.println("Error updating menu item: " + e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }
-    // --- API 5: UPLOAD ẢNH CHO MÓN ĂN (Dùng cho Admin) ---
-    @PutMapping("/{id}/image")
-    @PreAuthorize("haspermission('UPDATE_MENU')")
-    public ResponseEntity<Map<String, String>> uploadMenuItemImage(
-            @PathVariable Integer id, 
-            @RequestParam("file") MultipartFile file) {
-        
-        try {
-            String imageUrl = menuService.uploadImageForMenuItem(id, file);
-            Map<String, String> response = new HashMap<>();
-            response.put("imageUrl", imageUrl);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (RuntimeException e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-        }
-    }
-    // --- API 6: XÓA MỘT MÓN ĂN (Dùng cho Admin) ---
+    // --- API 5: XÓA MỘT MÓN ĂN (Dùng cho Admin) ---
     @DeleteMapping("/{id}")
     @PreAuthorize("haspermission('DELETE_MENU')")
     public ResponseEntity<Void> deleteMenuItem(@PathVariable Integer id) {
