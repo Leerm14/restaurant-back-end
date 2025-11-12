@@ -12,5 +12,5 @@ public class UserCreateRequest {
     private String fullName;
     private String email;
     private String phoneNumber;
-    private String roleName = "User";
+    private String roleName = "user";
 }

@@ -142,8 +142,8 @@ public class UserService {
             role = roleRepository.findByRoleName(request.getRoleName())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + request.getRoleName()));
         } else {
-            role = roleRepository.findByRoleName("USER")
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò mặc định 'USER'. Vui lòng kiểm tra database."));
+            role = roleRepository.findByRoleName("user")
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò mặc định 'user'. Vui lòng kiểm tra database."));
         }
         user.setRole(role);
 
