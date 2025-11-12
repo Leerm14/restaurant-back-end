@@ -41,19 +41,21 @@ public class SecurityConfig {
         
         return http.build();
     }
-@Bean
-CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
-    // Cho phép frontend của bạn
-    configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-    // Các phương thức cho phép
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    // Các header cho phép
-    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-    configuration.setAllowCredentials(true);
-
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration); // Áp dụng cho tất cả đường dẫn
-    return source;
-}
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Cho phép frontend (http://localhost:5173) và bất kỳ đâu
+        configuration.setAllowedOrigins(Arrays.asList("*")); 
+        
+        // Các method cho phép
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        
+        // Các header cho phép
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Áp dụng cho tất cả API
+        return source;
+    }
 }
