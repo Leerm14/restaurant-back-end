@@ -1,4 +1,4 @@
 package com.nhahang.restaurant.model;
 public enum RoleName { 
-    user, staff, admin 
+    User, Staff, Admin 
 }
