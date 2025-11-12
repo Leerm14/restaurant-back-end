@@ -137,11 +137,15 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPhoneNumber(request.getPhoneNumber());
 
+        Role role;
         if (request.getRoleName() != null) {
-            Role role = roleRepository.findByRoleName(request.getRoleName())
+            role = roleRepository.findByRoleName(request.getRoleName())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + request.getRoleName()));
-            user.setRole(role);
+        } else {
+            role = roleRepository.findByRoleName("USER")
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò mặc định 'USER'. Vui lòng kiểm tra database."));
         }
+        user.setRole(role);
 
         User savedUser = userRepository.save(user);
         return convertToDTO(savedUser);

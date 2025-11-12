@@ -113,7 +113,6 @@ public class UserController {
 
     // --- API 7: TẠO NGƯỜI DÙNG MỚI ---
     @PostMapping
-    @PreAuthorize("haspermission('CREATE_USER')")
     public ResponseEntity<UserDTO> createUser(@RequestBody UserCreateRequest request) {
         try {
             UserDTO createdUser = userService.createUser(request);
