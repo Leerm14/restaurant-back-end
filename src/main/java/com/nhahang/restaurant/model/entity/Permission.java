@@ -1,11 +1,15 @@
 package com.nhahang.restaurant.model.entity;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Set;
 
 @Entity
 @Table(name = "permissions")
-@Data
+@Getter
+@Setter
 public class Permission {
 
     @Id
