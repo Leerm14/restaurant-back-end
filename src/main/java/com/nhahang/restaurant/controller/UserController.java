@@ -117,7 +117,9 @@ public class UserController {
             UserDTO createdUser = userService.createUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (RuntimeException e) {
-            System.err.println("LỖI KHI TẠO USER: " + e.getMessage());
+            System.err.println("--- BẮT ĐẦU LỖI TẠO USER ---");
+            e.printStackTrace(); 
+            System.err.println("--- KẾT THÚC LỖI TẠO USER ---");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
