@@ -121,6 +121,16 @@ public class UserService {
      */
     @Transactional
     public UserDTO createUser(UserCreateRequest request) {
+        if (userRepository.findByUid(request.getUid()).isPresent()) {
+            throw new RuntimeException("Người dùng với UID đã tồn tại: " + request.getUid());
+        }
+        if (request.getEmail() != null && userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email đã được sử dụng: " + request.getEmail());
+        }
+        if (userRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
+            throw new RuntimeException("Số điện thoại đã được sử dụng: " + request.getPhoneNumber());
+        }
+
         User user = new User();
         user.setUid(request.getUid());
         user.setFullName(request.getFullName());

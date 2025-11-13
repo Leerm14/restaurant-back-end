@@ -112,12 +112,13 @@ public class UserController {
 
     // --- API 7: TẠO NGƯỜI DÙNG MỚI ---
     @PostMapping
-    public ResponseEntity<UserDTO> createUser(@RequestBody UserCreateRequest request) {
+    public ResponseEntity<?> createUser(@RequestBody UserCreateRequest request) {
         try {
             UserDTO createdUser = userService.createUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            System.err.println("LỖI KHI TẠO USER: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
