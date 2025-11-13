@@ -13,7 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.nhahang.restaurant.model.RoleName;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -89,7 +89,13 @@ public class UserService {
      */
     @Transactional
     public List<UserDTO> getUsersByRoleName(String roleName) {
-        Role role = roleRepository.findByRoleName(roleName)
+        RoleName roleNameEnum;
+        try {
+            roleNameEnum = RoleName.valueOf(roleName);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Vai trò không hợp lệ: " + roleName);
+        }
+        Role role = roleRepository.findByRoleName(roleNameEnum)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + roleName));
         List<User> users = userRepository.findAll().stream()
                 .filter(user -> user.getRole() != null && user.getRole().getId().equals(role.getId()))
@@ -104,7 +110,13 @@ public class UserService {
      */
     @Transactional
     public List<UserDTO> getUsersByRoleName(String roleName, int page, int size) {
-        Role role = roleRepository.findByRoleName(roleName)
+        RoleName roleNameEnum;
+        try {
+            roleNameEnum = RoleName.valueOf(roleName);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Vai trò không hợp lệ: " + roleName);
+        }
+        Role role = roleRepository.findByRoleName(roleNameEnum)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + roleName));
         
         Pageable pageable = PageRequest.of(page, size);
@@ -138,13 +150,18 @@ public class UserService {
         user.setPhoneNumber(request.getPhoneNumber());
 
         Role role;
-        if (request.getRoleName() != null) {
-            role = roleRepository.findByRoleName(request.getRoleName())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + request.getRoleName()));
-        } else {
-            role = roleRepository.findByRoleName("user")
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò mặc định 'user'. Vui lòng kiểm tra database."));
+        String roleNameString = (request.getRoleName() != null) ? request.getRoleName() : "user";
+
+        RoleName roleNameEnum;
+        try {
+            roleNameEnum = RoleName.valueOf(roleNameString);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Vai trò không hợp lệ: " + roleNameString);
         }
+
+        role = roleRepository.findByRoleName(roleNameEnum) 
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò trong database: " + roleNameString));
+        
         user.setRole(role);
 
         User savedUser = userRepository.save(user);
@@ -184,7 +201,14 @@ public class UserService {
         }
 
         if (request.getRoleName() != null) {
-            Role role = roleRepository.findByRoleName(request.getRoleName())
+            RoleName roleNameEnum;
+            try {
+                roleNameEnum = RoleName.valueOf(request.getRoleName());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Vai trò không hợp lệ: " + request.getRoleName());
+            }
+
+            Role role = roleRepository.findByRoleName(roleNameEnum) // <-- Gọi bằng Enum
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + request.getRoleName()));
             user.setRole(role);
         }
