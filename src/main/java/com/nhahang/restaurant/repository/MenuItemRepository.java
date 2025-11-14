@@ -15,5 +15,8 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Integer> {
     List<MenuItem> findByStatus(com.nhahang.restaurant.model.MenuItemStatus status);
 
     Page<MenuItem> findByStatus(com.nhahang.restaurant.model.MenuItemStatus status, Pageable pageable);
+    
     Page<MenuItem> findByCategoryId(Integer categoryId, Pageable pageable);
+    
+    long countByStatus(com.nhahang.restaurant.model.MenuItemStatus status);
 }

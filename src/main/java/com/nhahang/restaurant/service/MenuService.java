@@ -33,6 +33,30 @@ public class MenuService {
 
 
     /**
+     * Logic: Lấy tổng số trang
+     */
+    public Map<String, Object> getPageCount(Boolean available, int size) {
+        long totalItems;
+        
+        if (available != null && available) {
+            totalItems = menuItemRepository.countByStatus(MenuItemStatus.Available);
+        } else if (available != null && !available) {
+            totalItems = menuItemRepository.countByStatus(MenuItemStatus.Unavailable);
+        } else {
+            totalItems = menuItemRepository.count();
+        }
+        
+        long totalPages = (long) Math.ceil((double) totalItems / size);
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("totalItems", totalItems);
+        result.put("totalPages", totalPages);
+        result.put("pageSize", size);
+        
+        return result;
+    }
+
+    /**
      * Logic: Lấy tất cả các món ăn
      */
     public List<MenuItem> getAllMenuItems() {

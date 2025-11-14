@@ -25,6 +25,24 @@ public class MenuController {
 
     private final MenuService menuService;
 
+    // --- API 0: LẤY TỔNG SỐ TRANG ---
+    @GetMapping("/page-count")
+    @PreAuthorize("haspermission('READ_MENU')")
+    public ResponseEntity<Map<String, Object>> getPageCount(
+            @RequestParam(value = "available", required = false) Boolean available,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        try {
+            // Validation
+            if (size <= 0) size = 10;
+            if (size > 100) size = 100;
+            
+            Map<String, Object> result = menuService.getPageCount(available, size);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
     // --- API 1: LẤY TẤT CẢ MÓN ĂN (với filter available + pagination) ---
     @GetMapping 
     @PreAuthorize("haspermission('READ_MENU')")
