@@ -32,7 +32,6 @@ public class SecurityConfig {
                 // .anyRequest().permitAll() // Cấu hình cũ
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/users/me").permitAll()
                 .anyRequest().authenticated()  
             )
             .csrf(csrf -> csrf.disable())  
