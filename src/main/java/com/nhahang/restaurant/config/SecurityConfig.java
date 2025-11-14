@@ -32,6 +32,7 @@ public class SecurityConfig {
                 // .anyRequest().permitAll() // Cấu hình cũ
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users/me").permitAll()
                 .anyRequest().authenticated()  
             )
             .csrf(csrf -> csrf.disable())  
@@ -44,18 +45,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Cho phép frontend (http://localhost:5173) và bất kỳ đâu
         configuration.setAllowedOrigins(Arrays.asList("*")); 
-        
-        // Các method cho phép
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        
-        // Các header cho phép
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Áp dụng cho tất cả API
+        source.registerCorsConfiguration("/**", configuration); 
         return source;
     }
 }

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.nhahang.restaurant.model.RoleName;
@@ -22,6 +23,18 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+
+    /**
+     * Lấy thông tin người dùng hiện tại
+     */
+    @Transactional
+    public UserDTO getCurrentUser(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        if (user == null) {
+            throw new RuntimeException("Không tìm thấy thông tin người dùng hiện tại");
+        }
+        return convertToDTO(user);
+    }
 
     /**
      * Lấy tất cả người dùng
