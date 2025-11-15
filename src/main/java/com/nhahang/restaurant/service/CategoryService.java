@@ -26,15 +26,6 @@ public class CategoryService {
     }
 
     /**
-     * Lấy tất cả categories với pagination
-     */
-    public List<Category> getAllCategories(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Category> categoryPage = categoryRepository.findAll(pageable);
-        return categoryPage.getContent();
-    }
-
-    /**
      * Lấy category theo ID
      */
     public Optional<Category> getCategoryById(Integer id) {
