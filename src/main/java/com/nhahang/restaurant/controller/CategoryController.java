@@ -20,7 +20,7 @@ public class CategoryController {
 
     // --- API 1: LẤY TẤT CẢ CATEGORIES (với pagination) ---
     @GetMapping
-    @PreAuthorize("haspermission('READ_CATEGORY')")
+    @PreAuthorize("hasAuthority('READ_CATEGORY')")
     public ResponseEntity<List<Category>> getAllCategories(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -36,7 +36,7 @@ public class CategoryController {
 
     // --- API 2: TẠO CATEGORY MỚI ---
     @PostMapping
-    @PreAuthorize("haspermission('CREATE_CATEGORY')")
+    @PreAuthorize("hasAuthority('CREATE_CATEGORY')")
     public ResponseEntity<Category> createCategory(@RequestBody CategoryDTO categoryDTO) {
         try {
             Category createdCategory = categoryService.createCategory(categoryDTO);
@@ -49,7 +49,7 @@ public class CategoryController {
 
     // --- API 3: CẬP NHẬT CATEGORY ---
     @PutMapping("/{id}")
-    @PreAuthorize("haspermission('UPDATE_CATEGORY')")
+    @PreAuthorize("hasAuthority('UPDATE_CATEGORY')")
     public ResponseEntity<Category> updateCategory(@PathVariable Integer id, @RequestBody CategoryDTO categoryDTO) {
         try {
             Category updatedCategory = categoryService.updateCategory(id, categoryDTO);
@@ -62,7 +62,7 @@ public class CategoryController {
 
     // --- API 5: XÓA CATEGORY ---
     @DeleteMapping("/{id}")
-    @PreAuthorize("haspermission('DELETE_CATEGORY')")
+    @PreAuthorize("hasAuthority('DELETE_CATEGORY')")
     public ResponseEntity<Void> deleteCategory(@PathVariable Integer id) {
         try {
             categoryService.deleteCategory(id);
