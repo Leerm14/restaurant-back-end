@@ -29,7 +29,7 @@ public class PaymentController {
      * Lấy tất cả thanh toán
      */
     @GetMapping
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentDTO>> getAllPayments(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -50,7 +50,7 @@ public class PaymentController {
      * Lấy thanh toán theo ID
      */
     @GetMapping("/{id}")
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<PaymentDTO> getPaymentById(@PathVariable Integer id) {
         try {
             PaymentDTO payment = paymentService.getPaymentById(id);
@@ -66,7 +66,7 @@ public class PaymentController {
      * Lấy thanh toán theo order ID
      */
     @GetMapping("/order/{orderId}")
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<PaymentDTO> getPaymentByOrderId(@PathVariable Integer orderId) {
         try {
             PaymentDTO payment = paymentService.getPaymentByOrderId(orderId);
@@ -82,7 +82,7 @@ public class PaymentController {
      * Lấy thanh toán theo trạng thái
      */
     @GetMapping("/status/{status}")
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentDTO>> getPaymentsByStatus(
             @PathVariable String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -106,7 +106,7 @@ public class PaymentController {
      * Lấy thanh toán theo phương thức thanh toán
      */
     @GetMapping("/method/{method}")
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentDTO>> getPaymentsByMethod(@PathVariable String method) {
         try {
             List<PaymentDTO> payments = paymentService.getPaymentsByMethod(method);
@@ -122,7 +122,7 @@ public class PaymentController {
      * Tạo thanh toán mới
      */
     @PostMapping
-    // @PreAuthorize("hasAuthority('CREATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('CREATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> createPayment(@RequestBody PaymentCreateRequest request) {
         try {
             PaymentDTO createdPayment = paymentService.createPayment(request);
@@ -138,7 +138,7 @@ public class PaymentController {
      * Xác nhận thanh toán thành công
      */
     @PatchMapping("/{id}/confirm")
-    // @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> confirmPayment(@PathVariable Integer id) {
         try {
             PaymentDTO confirmedPayment = paymentService.confirmPayment(id);
@@ -154,7 +154,7 @@ public class PaymentController {
      * Đánh dấu thanh toán thất bại
      */
     @PatchMapping("/{id}/fail")
-    // @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> failPayment(@PathVariable Integer id) {
         try {
             PaymentDTO failedPayment = paymentService.failPayment(id);
@@ -170,7 +170,7 @@ public class PaymentController {
      * Cập nhật trạng thái thanh toán
      */
     @PatchMapping("/{id}/status")
-    // @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> updatePaymentStatus(
             @PathVariable Integer id,
             @RequestBody Map<String, String> request) {
@@ -192,7 +192,7 @@ public class PaymentController {
      * Xóa thanh toán
      */
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_PAYMENT')")
+    @PreAuthorize("hasAuthority('DELETE_PAYMENT')")
     public ResponseEntity<Void> deletePayment(@PathVariable Integer id) {
         try {
             paymentService.deletePayment(id);
@@ -210,7 +210,7 @@ public class PaymentController {
      * @param to Ngày kết thúc (format: yyyy-MM-dd), mặc định là cuối ngày hôm nay
      */
     @GetMapping("/revenue-report")
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<RevenueReportDTO> getRevenueReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
@@ -243,7 +243,7 @@ public class PaymentController {
      * @param to Ngày kết thúc (format: yyyy-MM-dd), mặc định là cuối ngày hôm nay
      */
     @GetMapping("/payment-method-distribution")
-    // @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentMethodDistributionDTO>> getPaymentMethodDistribution(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {

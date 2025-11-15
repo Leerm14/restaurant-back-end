@@ -27,7 +27,7 @@ public class MenuController {
 
     // --- API 0: LẤY TỔNG SỐ TRANG ---
     @GetMapping("/page-count")
-    // @PreAuthorize("hasAuthority('READ_MENU')")
+    @PreAuthorize("hasAuthority('READ_MENU')")
     public ResponseEntity<Map<String, Object>> getPageCount(
             @RequestParam(value = "available", required = false) Boolean available,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -45,7 +45,7 @@ public class MenuController {
     
     // --- API 1: LẤY TẤT CẢ MÓN ĂN (với filter available + pagination) ---
     @GetMapping 
-    // @PreAuthorize("hasAuthority('READ_MENU')")
+    @PreAuthorize("hasAuthority('READ_MENU')")
     public ResponseEntity<List<MenuItem>> getMenuItems(
             @RequestParam(value = "available", required = false) Boolean available,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -61,7 +61,7 @@ public class MenuController {
 
     // --- API 2: LẤY MÓN ĂN THEO ID ---
     @GetMapping("/{id}") 
-    // @PreAuthorize("hasAuthority('READ_MENU')")
+    @PreAuthorize("hasAuthority('READ_MENU')")
     public ResponseEntity<MenuItem> getMenuItemById(@PathVariable Integer id) {
         return menuService.getMenuItemById(id)
                 .map(item -> ResponseEntity.ok(item)) 
@@ -69,7 +69,7 @@ public class MenuController {
     }
     // --- API 2b: LẤY MÓN ĂN THEO CATEGORY ID (với pagination) ---
     @GetMapping("/category/{categoryId}")
-    // @PreAuthorize("hasAuthority('READ_MENU')")
+    @PreAuthorize("hasAuthority('READ_MENU')")
     public ResponseEntity<List<MenuItem>> getMenuItemsByCategoryId(
             @PathVariable Integer categoryId,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -85,7 +85,7 @@ public class MenuController {
     
     // --- API 3: TẠO MỘT MÓN ĂN MỚI (Dùng cho Admin) ---
     @PostMapping 
-    // @PreAuthorize("hasAuthority('CREATE_MENU')")
+    @PreAuthorize("hasAuthority('CREATE_MENU')")
     public ResponseEntity<MenuItem> createMenuItem(
             @ModelAttribute MenuItemDTO menuItemDTO, 
             @RequestParam("file") MultipartFile file) { 
@@ -100,7 +100,7 @@ public class MenuController {
     }
     // --- API 4: CẬP NHẬT MỘT MÓN ĂN (Dùng cho Admin) ---
     @PutMapping("/{id}")
-    // @PreAuthorize("hasAuthority('UPDATE_MENU')")
+    @PreAuthorize("hasAuthority('UPDATE_MENU')")
     public ResponseEntity<MenuItem> updateMenuItem(
             @PathVariable Integer id, 
             @ModelAttribute MenuItemDTO menuItemDTO, 
@@ -115,7 +115,7 @@ public class MenuController {
     }
     // --- API 5: XÓA MỘT MÓN ĂN (Dùng cho Admin) ---
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_MENU')")
+    @PreAuthorize("hasAuthority('DELETE_MENU')")
     public ResponseEntity<Void> deleteMenuItem(@PathVariable Integer id) {
         try {
             menuService.deleteMenuItem(id);
@@ -127,7 +127,7 @@ public class MenuController {
 
     // --- API 6: LẤY DANH SÁCH MÓN ĂN BÁN CHẠY NHẤT ---
     @GetMapping("/best-selling")
-    // @PreAuthorize("hasAuthority('READ_MENU')")
+    @PreAuthorize("hasAuthority('READ_MENU')")
     public ResponseEntity<List<BestSellingItemDTO>> getBestSellingItems(
             @RequestParam(value = "limit", defaultValue = "10") int limit) {
         try {

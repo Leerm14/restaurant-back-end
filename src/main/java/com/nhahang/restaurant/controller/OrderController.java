@@ -25,7 +25,7 @@ public class OrderController {
      * Lấy tất cả đơn hàng
      */
     @GetMapping
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<List<OrderDTO>> getAllOrders(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -46,7 +46,7 @@ public class OrderController {
      * Lấy đơn hàng theo ID
      */
     @GetMapping("/{id}")
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<OrderDTO> getOrderById(@PathVariable Integer id) {
         try {
             OrderDTO order = orderService.getOrderById(id);
@@ -62,7 +62,7 @@ public class OrderController {
      * Lấy đơn hàng theo user ID
      */
     @GetMapping("/user/{userId}")
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<List<OrderDTO>> getOrdersByUserId(@PathVariable Integer userId) {
         try {
             List<OrderDTO> orders = orderService.getOrdersByUserId(userId);
@@ -76,7 +76,7 @@ public class OrderController {
      * Lấy đơn hàng theo table ID
      */
     @GetMapping("/table/{tableId}")
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<List<OrderDTO>> getOrdersByTableId(@PathVariable Integer tableId) {
         try {
             List<OrderDTO> orders = orderService.getOrdersByTableId(tableId);
@@ -90,7 +90,7 @@ public class OrderController {
      * Lấy đơn hàng theo trạng thái
      */
     @GetMapping("/status/{status}")
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<List<OrderDTO>> getOrdersByStatus(
             @PathVariable String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -114,7 +114,7 @@ public class OrderController {
      * Tạo đơn hàng mới
      */
     @PostMapping
-    // @PreAuthorize("hasAuthority('CREATE_ORDER')")
+    @PreAuthorize("hasAuthority('CREATE_ORDER')")
     public ResponseEntity<OrderDTO> createOrder(@RequestBody OrderCreateRequest request) {
         try {
             OrderDTO createdOrder = orderService.createOrder(request);
@@ -130,7 +130,7 @@ public class OrderController {
      * Cập nhật trạng thái đơn hàng
      */
     @PatchMapping("/{id}/status")
-    // @PreAuthorize("hasAuthority('UPDATE_ORDER')")
+    @PreAuthorize("hasAuthority('UPDATE_ORDER')")
     public ResponseEntity<OrderDTO> updateOrderStatus(
             @PathVariable Integer id,
             @RequestBody Map<String, String> request) {
@@ -152,7 +152,7 @@ public class OrderController {
      * Hủy đơn hàng
      */
     @PatchMapping("/{id}/cancel")
-    // @PreAuthorize("hasAuthority('UPDATE_ORDER')")
+    @PreAuthorize("hasAuthority('UPDATE_ORDER')")
     public ResponseEntity<OrderDTO> cancelOrder(@PathVariable Integer id) {
         try {
             OrderDTO cancelledOrder = orderService.cancelOrder(id);
@@ -168,7 +168,7 @@ public class OrderController {
      * Xóa đơn hàng
      */
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_ORDER')")
+    @PreAuthorize("hasAuthority('DELETE_ORDER')")
     public ResponseEntity<Void> deleteOrder(@PathVariable Integer id) {
         try {
             orderService.deleteOrder(id);
@@ -186,7 +186,7 @@ public class OrderController {
      * @param month Tháng (mặc định: tháng hiện tại)
      */
     @GetMapping("/stats/monthly")
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<MonthlyOrderStatsDTO> getMonthlyOrderStats(
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month) {
@@ -220,7 +220,7 @@ public class OrderController {
      * @param toMonth Đến tháng (1-12)
      */
     @GetMapping("/stats/monthly-range")
-    // @PreAuthorize("hasAuthority('READ_ORDER')")
+    @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<List<MonthlyOrderStatsDTO>> getMonthlyOrderStatsRange(
             @RequestParam Integer year,
             @RequestParam Integer fromMonth,
