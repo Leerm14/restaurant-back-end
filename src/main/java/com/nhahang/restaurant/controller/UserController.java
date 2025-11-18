@@ -143,7 +143,7 @@ public class UserController {
     }
    // --- API 7: CẬP NHẬT NGƯỜI DÙNG ---
     @PutMapping("/{id}")
-     @PreAuthorize("hasAuthority('UPDATE_USER')")
+    @PreAuthorize("hasAuthority('UPDATE_USER')")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Integer id,
             @RequestBody UserUpdateRequest request) {
