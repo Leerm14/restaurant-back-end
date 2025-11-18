@@ -17,6 +17,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RestaurantTableController {
     private final RestaurantTableService restaurantTableService;
+    
+    // --- API 0: LẤY THỐNG KÊ SỐ BÀN ---
+    @GetMapping("/count")
+    // @PreAuthorize("hasAuthority('READ_TABLE')")
+    public ResponseEntity<java.util.Map<String, Object>> getTablesCountStatistics() {
+        java.util.Map<String, Object> statistics = restaurantTableService.getTablesCountStatistics();
+        return ResponseEntity.ok(statistics);
+    }
+    
     // --- API 1: LẤY TẤT CẢ BÀN THEO STATUS ---
     @GetMapping
     // @PreAuthorize("hasAuthority('READ_TABLE')")

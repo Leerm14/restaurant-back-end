@@ -16,6 +16,27 @@ public class RestaurantTableService {
     private final RestaurantTableRepository restaurantTableRepository;
 
     /**
+     * Lấy thống kê số bàn (tổng số và theo từng trạng thái)
+     */
+    public java.util.Map<String, Object> getTablesCountStatistics() {
+        java.util.Map<String, Object> statistics = new java.util.HashMap<>();
+        
+        // Tổng số bàn
+        long totalCount = restaurantTableRepository.count();
+        statistics.put("total", totalCount);
+        
+        // Số bàn theo từng trạng thái
+        java.util.Map<String, Long> byStatus = new java.util.HashMap<>();
+        for (TableStatus status : TableStatus.values()) {
+            long count = restaurantTableRepository.countByStatus(status);
+            byStatus.put(status.name(), count);
+        }
+        statistics.put("byStatus", byStatus);
+        
+        return statistics;
+    }
+
+    /**
      * Lấy tất cả bàn 
      */
     public List<RestaurantTable> getAllTables() {
