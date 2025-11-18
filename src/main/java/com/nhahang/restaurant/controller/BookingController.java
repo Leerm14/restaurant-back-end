@@ -19,7 +19,7 @@ public class BookingController {
 
     // --- API 1: TẠO ĐẶT BÀN MỚI ---
     @PostMapping
-    // @PreAuthorize("hasAuthority('CREATE_BOOKING')")
+     @PreAuthorize("hasAuthority('CREATE_BOOKING')")
     public ResponseEntity<Booking> createBooking(@RequestBody BookingCreateRequest request) {
         try {
             Booking booking = bookingService.createBooking(request);
@@ -31,7 +31,7 @@ public class BookingController {
 
     // --- API 2: LẤY TẤT CẢ ĐẶT BÀN ---
     @GetMapping
-    // @PreAuthorize("hasAuthority('READ_BOOKING')")
+     @PreAuthorize("hasAuthority('READ_BOOKING')")
     public ResponseEntity<List<Booking>> getAllBookings(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -47,7 +47,7 @@ public class BookingController {
 
     // --- API 3: LẤY ĐẶT BÀN THEO ID ---
     @GetMapping("/{id}")
-    // @PreAuthorize("hasAuthority('READ_BOOKING')")
+     @PreAuthorize("hasAuthority('READ_BOOKING')")
     public ResponseEntity<Booking> getBookingById(@PathVariable Integer id) {
         try {
             Booking booking = bookingService.getBookingById(id);
@@ -59,7 +59,7 @@ public class BookingController {
 
     // --- API 4: LẤY ĐẶT BÀN THEO USER ID ---
     @GetMapping("/user/{userId}")
-    // @PreAuthorize("hasAuthority('READ_BOOKING')")
+     @PreAuthorize("hasAuthority('READ_BOOKING')")
     public ResponseEntity<List<Booking>> getBookingsByUserId(@PathVariable Integer userId) {
         List<Booking> bookings = bookingService.getBookingsByUserId(userId);
         return ResponseEntity.ok(bookings);
@@ -67,7 +67,7 @@ public class BookingController {
 
     // --- API 5: LẤY ĐẶT BÀN THEO TABLE ID ---
     @GetMapping("/table/{tableId}")
-    // @PreAuthorize("hasAuthority('READ_BOOKING')")
+     @PreAuthorize("hasAuthority('READ_BOOKING')")
     public ResponseEntity<List<Booking>> getBookingsByTableId(@PathVariable Integer tableId) {
         List<Booking> bookings = bookingService.getBookingsByTableId(tableId);
         return ResponseEntity.ok(bookings);
@@ -75,7 +75,7 @@ public class BookingController {
      
     // --- API 6: LẤY ĐẶT BÀN THEO PHONE NUMBER ---
     @GetMapping("/phone/{phoneNumber}")
-    // @PreAuthorize("hasAuthority('READ_BOOKING')")
+     @PreAuthorize("hasAuthority('READ_BOOKING')")
     public ResponseEntity<List<Booking>> getBookingsByPhoneNumber(@PathVariable String phoneNumber) {
         List<Booking> bookings = bookingService.getBookingsByPhoneNumber(phoneNumber);
         return ResponseEntity.ok(bookings);
@@ -83,7 +83,7 @@ public class BookingController {
 
     /// --- API 7: CẬP NHẬT ĐẶT BÀN ---
     @PutMapping("/{id}")
-    // @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
+     @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
     public ResponseEntity<Booking> updateBooking(
             @PathVariable Integer id, 
             @RequestBody BookingCreateRequest request) {
@@ -97,7 +97,7 @@ public class BookingController {
 
     /// --- API 7: HỦY ĐẶT BÀN ---
     @PutMapping("/{id}/cancel")
-    // @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
+     @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
     public ResponseEntity<Booking> cancelBooking(@PathVariable Integer id) {
         try {
             Booking booking = bookingService.cancelBooking(id);
@@ -109,7 +109,7 @@ public class BookingController {
 
     /// --- API 8: HOÀN THÀNH ĐẶT BÀN ---
     @PutMapping("/{id}/complete")
-    // @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
+     @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
     public ResponseEntity<Booking> completeBooking(@PathVariable Integer id) {
         try {
             Booking booking = bookingService.completeBooking(id);
@@ -121,7 +121,7 @@ public class BookingController {
 
     /// --- API 9: XÓA ĐẶT BÀN ---
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_BOOKING')")
+     @PreAuthorize("hasAuthority('DELETE_BOOKING')")
     public ResponseEntity<Void> deleteBooking(@PathVariable Integer id) {
         try {
             bookingService.deleteBooking(id);

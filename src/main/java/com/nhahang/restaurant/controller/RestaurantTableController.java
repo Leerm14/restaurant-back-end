@@ -20,7 +20,7 @@ public class RestaurantTableController {
     
     // --- API 0: LẤY THỐNG KÊ SỐ BÀN ---
     @GetMapping("/count")
-    // @PreAuthorize("hasAuthority('READ_TABLE')")
+     @PreAuthorize("hasAuthority('READ_TABLE')")
     public ResponseEntity<java.util.Map<String, Object>> getTablesCountStatistics() {
         java.util.Map<String, Object> statistics = restaurantTableService.getTablesCountStatistics();
         return ResponseEntity.ok(statistics);
@@ -28,7 +28,7 @@ public class RestaurantTableController {
     
     // --- API 1: LẤY TẤT CẢ BÀN THEO STATUS ---
     @GetMapping
-    // @PreAuthorize("hasAuthority('READ_TABLE')")
+     @PreAuthorize("hasAuthority('READ_TABLE')")
     public ResponseEntity<List<RestaurantTable>> getTablesByStatus(
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -55,7 +55,7 @@ public class RestaurantTableController {
     }
     // --- API 2: LẤY BÀN THEO SỐ BÀN ---
     @GetMapping("/{tableNumber}")
-    // @PreAuthorize("hasAuthority('READ_TABLE')")
+     @PreAuthorize("hasAuthority('READ_TABLE')")
     public ResponseEntity<RestaurantTable> getTableByNumber(@PathVariable int tableNumber) {
         return restaurantTableService.getTableByNumber(tableNumber)
                 .map(table -> ResponseEntity.ok(table))
@@ -63,7 +63,7 @@ public class RestaurantTableController {
     }
     // --- API 3: THÊM BÀN MỚI ---
     @PostMapping
-    // @PreAuthorize("hasAuthority('CREATE_TABLE')")
+     @PreAuthorize("hasAuthority('CREATE_TABLE')")
     public ResponseEntity<RestaurantTable> createTable(@RequestBody TableDTO tableDTO) {
         try{
             RestaurantTable createdTable = restaurantTableService.createTable(tableDTO);
@@ -74,7 +74,7 @@ public class RestaurantTableController {
     }
     // --- API 4: CẬP NHẬT THÔNG TIN BÀN ---
     @PutMapping("/{id}")
-    // @PreAuthorize("hasAuthority('UPDATE_TABLE')")
+     @PreAuthorize("hasAuthority('UPDATE_TABLE')")
     public ResponseEntity<RestaurantTable> updateTable(@PathVariable Integer id, @RequestBody TableDTO tableDTO) {
         try {
             RestaurantTable updatedTable = restaurantTableService.updateTable(id, tableDTO);
@@ -86,7 +86,7 @@ public class RestaurantTableController {
     
     // --- API 5: SỬA TRẠNG THÁI BÀN ---
     @PatchMapping("/{id}/status")
-    // @PreAuthorize("hasAuthority('UPDATE_TABLE')")
+     @PreAuthorize("hasAuthority('UPDATE_TABLE')")
     public ResponseEntity<RestaurantTable> updateTableStatus(@PathVariable Integer id, @RequestParam String status) {
         try {
             RestaurantTable updatedTable = restaurantTableService.updateTableStatus(id, status);
@@ -99,7 +99,7 @@ public class RestaurantTableController {
 
     // --- API 6: XÓA BÀN ---
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_TABLE')")
+     @PreAuthorize("hasAuthority('DELETE_TABLE')")
     public ResponseEntity<Void> deleteTable(@PathVariable Integer id) {
         try {
             restaurantTableService.deleteTable(id);

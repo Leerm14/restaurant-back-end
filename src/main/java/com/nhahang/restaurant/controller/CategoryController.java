@@ -20,7 +20,7 @@ public class CategoryController {
 
     // --- API 1: LẤY TẤT CẢ CATEGORIES ---
     @GetMapping
-    // @PreAuthorize("hasAuthority('READ_CATEGORY')")
+     @PreAuthorize("hasAuthority('READ_CATEGORY')")
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
@@ -28,7 +28,7 @@ public class CategoryController {
 
     // --- API 2: TẠO CATEGORY MỚI ---
     @PostMapping
-    // @PreAuthorize("hasAuthority('CREATE_CATEGORY')")
+     @PreAuthorize("hasAuthority('CREATE_CATEGORY')")
     public ResponseEntity<Category> createCategory(@RequestBody CategoryDTO categoryDTO) {
         try {
             Category createdCategory = categoryService.createCategory(categoryDTO);
@@ -41,7 +41,7 @@ public class CategoryController {
 
     // --- API 3: CẬP NHẬT CATEGORY ---
     @PutMapping("/{id}")
-    // @PreAuthorize("hasAuthority('UPDATE_CATEGORY')")
+     @PreAuthorize("hasAuthority('UPDATE_CATEGORY')")
     public ResponseEntity<Category> updateCategory(@PathVariable Integer id, @RequestBody CategoryDTO categoryDTO) {
         try {
             Category updatedCategory = categoryService.updateCategory(id, categoryDTO);
@@ -54,7 +54,7 @@ public class CategoryController {
 
     // --- API 5: XÓA CATEGORY ---
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_CATEGORY')")
+     @PreAuthorize("hasAuthority('DELETE_CATEGORY')")
     public ResponseEntity<Void> deleteCategory(@PathVariable Integer id) {
         try {
             categoryService.deleteCategory(id);

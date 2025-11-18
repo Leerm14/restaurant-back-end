@@ -35,7 +35,7 @@ public class UserController {
     
     // --- API 1: LẤY TẤT CẢ NGƯỜI DÙNG ---
     @GetMapping
-    // @PreAuthorize("hasAuthority('READ_USER')")
+     @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<List<UserDTO>> getAllUsers(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -53,7 +53,7 @@ public class UserController {
     }
     // --- API 2: LẤY NGƯỜI DÙNG THEO ID ---
     @GetMapping("/{id}")
-    // @PreAuthorize("hasAuthority('READ_USER')")
+     @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Integer id) {
         try {
             UserDTO user = userService.getUserById(id);
@@ -66,7 +66,7 @@ public class UserController {
     }
     // --- API 3: LẤY NGƯỜI DÙNG THEO UID ---
     @GetMapping("/uid/{uid}")
-    // @PreAuthorize("hasAuthority('READ_USER')")
+     @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<UserDTO> getUserByUid(@PathVariable String uid) {
         try {
             UserDTO user = userService.getUserByUid(uid);
@@ -80,7 +80,7 @@ public class UserController {
 
     // --- API 4: LẤY NGƯỜI DÙNG THEO EMAIL ---
     @GetMapping("/email/{email}")
-    // @PreAuthorize("hasAuthority('READ_USER')")
+     @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<UserDTO> getUserByEmail(@PathVariable String email) {
         try {
             UserDTO user = userService.getUserByEmail(email);
@@ -93,7 +93,7 @@ public class UserController {
     }
  // --- API 5: LẤY NGƯỜI DÙNG THEO SỐ ĐIỆN THOẠI ---
     @GetMapping("/phone/{phoneNumber}")
-    // @PreAuthorize("hasAuthority('READ_USER')")
+     @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<UserDTO> getUserByPhoneNumber(@PathVariable String phoneNumber) {
         try {
             UserDTO user = userService.getUserByPhoneNumber(phoneNumber);
@@ -106,7 +106,7 @@ public class UserController {
     }
     // --- API 6: LẤY NGƯỜI DÙNG THEO ROLE NAME ---
     @GetMapping("/role/{roleName}")
-    // @PreAuthorize("hasAuthority('READ_USER')")
+     @PreAuthorize("hasAuthority('READ_USER')")
     public ResponseEntity<List<UserDTO>> getUsersByRoleName(
             @PathVariable String roleName,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -143,7 +143,7 @@ public class UserController {
     }
    // --- API 7: CẬP NHẬT NGƯỜI DÙNG ---
     @PutMapping("/{id}")
-    // @PreAuthorize("hasAuthority('UPDATE_USER')")
+     @PreAuthorize("hasAuthority('UPDATE_USER')")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Integer id,
             @RequestBody UserUpdateRequest request) {
@@ -158,7 +158,7 @@ public class UserController {
     }
     // --- API 8: XÓA NGƯỜI DÙNG ---
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAuthority('DELETE_USER')")
+     @PreAuthorize("hasAuthority('DELETE_USER')")
     public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
         try {
             userService.deleteUser(id);
