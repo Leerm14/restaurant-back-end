@@ -1,5 +1,7 @@
 package com.nhahang.restaurant.service;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
 import com.nhahang.restaurant.dto.UserCreateRequest;
 import com.nhahang.restaurant.dto.UserDTO;
 import com.nhahang.restaurant.dto.UserUpdateRequest;
@@ -231,12 +233,24 @@ public class UserService {
     }
 
     /**
-     * Xóa người dùng
+     * Xóa người dùng (cả trên Firebase và Database)
      */
     @Transactional
     public void deleteUser(Integer id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
+        
+        // 1. Xóa user trên Firebase
+        try {
+            FirebaseAuth.getInstance().deleteUser(user.getUid());
+        } catch (FirebaseAuthException e) {
+            // Log lỗi nhưng vẫn tiếp tục xóa trong database
+            System.err.println("Lỗi khi xóa user trên Firebase (UID: " + user.getUid() + "): " + e.getMessage());
+            // Có thể throw exception nếu muốn bắt buộc xóa Firebase thành công
+            // throw new RuntimeException("Không thể xóa người dùng trên Firebase: " + e.getMessage());
+        }
+        
+        // 2. Xóa user trong database
         userRepository.delete(user);
     }
 
