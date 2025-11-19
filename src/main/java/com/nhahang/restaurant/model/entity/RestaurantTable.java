@@ -1,5 +1,6 @@
 package com.nhahang.restaurant.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nhahang.restaurant.model.TableStatus;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -15,6 +16,7 @@ public class RestaurantTable {
     private Integer id;
 
     @Column(name = "table_number", nullable = false, unique = true)
+    @JsonProperty("tableNumber")
     private int tableNumber;
 
     @Column(nullable = false)
