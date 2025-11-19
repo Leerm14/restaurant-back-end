@@ -1,4 +1,5 @@
 package com.nhahang.restaurant.model.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nhahang.restaurant.model.RoleName;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -27,5 +28,6 @@ public class Role {
         joinColumns = @JoinColumn(name = "role_id"), 
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
+    @JsonIgnore
     private Set<Permission> permissions;
 }
