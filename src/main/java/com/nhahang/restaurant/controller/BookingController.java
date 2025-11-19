@@ -95,24 +95,12 @@ public class BookingController {
         }
     }
 
-    /// --- API 7: HỦY ĐẶT BÀN ---
-    @PutMapping("/{id}/cancel")
+    /// --- API 7b: CẬP NHẬT TRẠNG THÁI ĐẶT BÀN ---
+    @PatchMapping("/{id}/status")
      @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
-    public ResponseEntity<Booking> cancelBooking(@PathVariable Integer id) {
+    public ResponseEntity<Booking> updateBookingStatus(@PathVariable Integer id, @RequestParam String status) {
         try {
-            Booking booking = bookingService.cancelBooking(id);
-            return ResponseEntity.ok(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /// --- API 8: HOÀN THÀNH ĐẶT BÀN ---
-    @PutMapping("/{id}/complete")
-     @PreAuthorize("hasAuthority('UPDATE_BOOKING')")
-    public ResponseEntity<Booking> completeBooking(@PathVariable Integer id) {
-        try {
-            Booking booking = bookingService.completeBooking(id);
+            Booking booking = bookingService.updateBookingStatus(id, status);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

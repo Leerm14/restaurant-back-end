@@ -121,6 +121,36 @@ public class BookingService {
     }
 
     /**
+     * Cập nhật trạng thái đặt bàn
+     */
+    @Transactional
+    public Booking updateBookingStatus(Integer id, String statusStr) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đặt bàn với ID: " + id));
+
+        BookingStatus status;
+        try {
+            status = BookingStatus.valueOf(statusStr);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái không hợp lệ: " + statusStr);
+        }
+
+        booking.setStatus(status);
+
+        RestaurantTable table = booking.getTable();
+        if (status == BookingStatus.Cancelled) {
+            table.setStatus(TableStatus.Available);
+        } else if (status == BookingStatus.Confirmed) {
+            table.setStatus(TableStatus.Booked);
+        } else if (status == BookingStatus.Completed) {
+            table.setStatus(TableStatus.Available);
+        }
+        restaurantTableRepository.save(table);
+
+        return bookingRepository.save(booking);
+    }
+
+    /**
      * Hủy đặt bàn
      */
     @Transactional
