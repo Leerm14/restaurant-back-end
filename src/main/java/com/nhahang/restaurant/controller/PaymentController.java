@@ -6,6 +6,9 @@ import com.nhahang.restaurant.dto.PaymentMethodDistributionDTO;
 import com.nhahang.restaurant.dto.RevenueReportDTO;
 import com.nhahang.restaurant.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import vn.payos.type.CheckoutResponseData;
+import vn.payos.type.Webhook;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +27,34 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    /**
+     * API 1: TẠO LINK THANH TOÁN PAYOS
+     * Frontend gọi API này khi user chọn thanh toán PayOS
+     */
+    @PostMapping("/payos/{orderId}")
+    @PreAuthorize("hasAuthority('CREATE_PAYMENT')") 
+    public ResponseEntity<?> createPayOSLink(@PathVariable Integer orderId) {
+        try {
+            CheckoutResponseData data = paymentService.createPayOSLink(orderId);
+            return ResponseEntity.ok(data);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * API 2: WEBHOOK (PayOS gọi vào đây)
+     * Không cần token authentication (đã config ở SecurityConfig)
+     */
+    @PostMapping("/payos/webhook")
+    public ResponseEntity<String> handlePayOSWebhook(@RequestBody Webhook webhook) {
+        try {
+            paymentService.handlePayOSWebhook(webhook);
+            return ResponseEntity.ok("Webhook received");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     /**
      * Lấy tất cả thanh toán

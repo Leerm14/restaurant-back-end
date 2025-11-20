@@ -31,6 +31,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
                 .anyRequest().authenticated()  
             )
             .csrf(csrf -> csrf.disable())  

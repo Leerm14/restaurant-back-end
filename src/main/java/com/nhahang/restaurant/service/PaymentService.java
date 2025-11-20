@@ -12,11 +12,18 @@ import com.nhahang.restaurant.model.entity.Payment;
 import com.nhahang.restaurant.repository.OrderRepository;
 import com.nhahang.restaurant.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.payos.PayOS;
+import vn.payos.type.CheckoutResponseData;
+import vn.payos.type.ItemData;
+import vn.payos.type.PaymentData;
+import vn.payos.type.Webhook;
+import vn.payos.type.WebhookData;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -32,7 +39,12 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+    private final PayOS payOS;
+    @Value("${payos.return-url}")
+    private String returnUrl;
 
+    @Value("${payos.cancel-url}")
+    private String cancelUrl;
     /**
      * Lấy tất cả thanh toán
      */
@@ -350,24 +362,6 @@ public class PaymentService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
         report.setCashTransactions((long) cashPayments.size());
 
-        // QR Code
-        List<Payment> qrCodePayments = payments.stream()
-                .filter(p -> p.getPaymentMethod() == PaymentMethod.QR_Code)
-                .collect(Collectors.toList());
-        report.setQrCodeRevenue(qrCodePayments.stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-        report.setQrCodeTransactions((long) qrCodePayments.size());
-
-        // Credit Card
-        List<Payment> creditCardPayments = payments.stream()
-                .filter(p -> p.getPaymentMethod() == PaymentMethod.Credit_Card)
-                .collect(Collectors.toList());
-        report.setCreditCardRevenue(creditCardPayments.stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-        report.setCreditCardTransactions((long) creditCardPayments.size());
-
         return report;
     }
 
@@ -427,5 +421,105 @@ public class PaymentService {
         distribution.sort((a, b) -> b.getTransactionCount().compareTo(a.getTransactionCount()));
 
         return distribution;
+    }
+    /**
+     * TẠO LINK THANH TOÁN PAYOS
+     */
+    @Transactional
+    public CheckoutResponseData createPayOSLink(Integer orderId) {
+        // 1. Lấy Order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + orderId));
+
+        if (order.getTotalAmount().intValue() <= 0) {
+            throw new RuntimeException("Số tiền phải lớn hơn 0");
+        }
+
+        // 2. Tạo ItemData cho PayOS (để hiển thị tên món ăn ở màn hình thanh toán)
+        List<ItemData> items = order.getOrderItems().stream()
+                .map(item -> ItemData.builder()
+                        .name(item.getMenuItem().getName())
+                        .quantity(item.getQuantity())
+                        .price(item.getPriceAtOrder().intValue())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 3. Tạo PaymentData
+        // Lưu ý: orderCode của PayOS yêu cầu là số nguyên (long). Ta dùng orderId.
+        // Nếu cần unique mỗi lần thử lại, có thể dùng System.currentTimeMillis() và lưu mapping lại.
+        long orderCode = Long.valueOf(order.getId()); 
+        
+        String description = "Thanh toan don hang " + orderCode;
+        // Cắt chuỗi description nếu quá dài (PayOS giới hạn 25 ký tự cho description khi chuyển khoản)
+        if(description.length() > 25) description = description.substring(0, 25);
+
+        PaymentData paymentData = PaymentData.builder()
+                .orderCode(orderCode)
+                .amount(order.getTotalAmount().intValue())
+                .description(description)
+                .items(items)
+                .returnUrl(returnUrl)
+                .cancelUrl(cancelUrl)
+                .build();
+
+        try {
+            // 4. Gọi PayOS để lấy link
+            CheckoutResponseData data = payOS.createPaymentLink(paymentData);
+
+            // 5. Lưu thông tin Payment vào Database (Trạng thái Pending)
+            // Kiểm tra xem payment cho order này đã tồn tại chưa
+            Payment payment = paymentRepository.findByOrderId(orderId).orElse(new Payment());
+            
+            payment.setOrder(order);
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(PaymentMethod.PayOS);
+            payment.setStatus(PaymentStatus.Pending);
+            payment.setTransactionId(String.valueOf(orderCode)); // Lưu orderCode làm transactionId
+            
+            paymentRepository.save(payment);
+
+            return data;
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi tạo link PayOS: " + e.getMessage());
+        }
+    }
+
+    /**
+     * XỬ LÝ WEBHOOK TỪ PAYOS
+     */
+    @Transactional
+    public void handlePayOSWebhook(Webhook webhookBody) {
+        try {
+            // 1. Xác thực dữ liệu Webhook (đảm bảo do PayOS gửi)
+            WebhookData data = payOS.verifyPaymentWebhookData(webhookBody);
+            
+            // 2. Lấy orderCode từ webhook (chính là orderId mình đã gửi đi)
+            long orderCode = data.getOrderCode();
+            Integer orderId = (int) orderCode;
+
+            // 3. Tìm Payment trong DB
+            Payment payment = paymentRepository.findByOrderId(orderId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho Order ID: " + orderId));
+
+            // 4. Kiểm tra và cập nhật trạng thái
+            // Nếu PayOS báo success (code == "00")
+            if ("00".equals(data.getCode())) {
+                if (payment.getStatus() != PaymentStatus.Successful) {
+                    payment.setStatus(PaymentStatus.Successful);
+                    payment.setTransactionId(data.getReference()); // Update mã tham chiếu thực tế từ ngân hàng nếu cần
+                    paymentRepository.save(payment);
+
+                    // Cập nhật trạng thái Order
+                    Order order = payment.getOrder();
+                    if (order != null) {
+                        order.setStatus(OrderStatus.Completed);
+                        orderRepository.save(order);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi xử lý Webhook: " + e.getMessage());
+        }
     }
 }
