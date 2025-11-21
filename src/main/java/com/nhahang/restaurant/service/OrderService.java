@@ -190,6 +190,69 @@ public class OrderService {
     }
 
     /**
+     * Cập nhật đơn hàng
+     */
+    @Transactional
+    public OrderDTO updateOrder(Integer id, OrderCreateRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + id));
+
+        // Kiểm tra trạng thái
+        if (order.getStatus() == OrderStatus.Cancelled) {
+            throw new RuntimeException("Không thể cập nhật đơn hàng đã bị hủy");
+        }
+
+        if (order.getStatus() == OrderStatus.Completed) {
+            throw new RuntimeException("Không thể cập nhật đơn hàng đã hoàn thành");
+        }
+
+        // Cập nhật table nếu thay đổi
+        if (request.getTableId() != null && !order.getTable().getId().equals(request.getTableId())) {
+            RestaurantTable newTable = restaurantTableRepository.findById(request.getTableId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
+            order.setTable(newTable);
+        }
+
+        // Cập nhật orderType nếu có
+        if (request.getOrderType() != null) {
+            try {
+                OrderType orderType = OrderType.valueOf(request.getOrderType());
+                order.setOrderType(orderType);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Loại đơn hàng không hợp lệ: " + request.getOrderType());
+            }
+        }
+
+        order.getOrderItems().clear();
+        orderRepository.save(order);
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (OrderItemRequest itemRequest : request.getOrderItems()) {
+            MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn với ID: " + itemRequest.getMenuItemId()));
+
+            if (menuItem.getStatus() != MenuItemStatus.Available) {
+                throw new RuntimeException("Món ăn '" + menuItem.getName() + "' hiện không khả dụng");
+            }
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setMenuItem(menuItem);
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setPriceAtOrder(menuItem.getPrice());
+
+            order.getOrderItems().add(orderItem);
+
+            BigDecimal itemTotal = menuItem.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            totalAmount = totalAmount.add(itemTotal);
+        }
+
+        order.setTotalAmount(totalAmount);
+        Order updatedOrder = orderRepository.save(order);
+        return convertToDTO(updatedOrder);
+    }
+
+    /**
      * Cập nhật trạng thái đơn hàng
      */
     @Transactional

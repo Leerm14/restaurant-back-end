@@ -1,5 +1,5 @@
 package com.nhahang.restaurant.model;
 
 public enum BookingStatus {
-    Confirmed, Pending, Cancelled, Completed
+    Confirmed, Pending ,Cancelled, Completed
 }

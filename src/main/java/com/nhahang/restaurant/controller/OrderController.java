@@ -127,6 +127,24 @@ public class OrderController {
     }
 
     /**
+     * Cập nhật đơn hàng
+     */
+    @PutMapping("/{id}")
+     @PreAuthorize("hasAuthority('UPDATE_ORDER')")
+    public ResponseEntity<OrderDTO> updateOrder(
+            @PathVariable Integer id,
+            @RequestBody OrderCreateRequest request) {
+        try {
+            OrderDTO updatedOrder = orderService.updateOrder(id, request);
+            return ResponseEntity.ok(updatedOrder);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * Cập nhật trạng thái đơn hàng
      */
     @PatchMapping("/{id}/status")
