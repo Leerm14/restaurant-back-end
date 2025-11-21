@@ -132,18 +132,28 @@ public class OrderService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + request.getUserId()));
 
-        RestaurantTable table = null;
-        if (request.getTableId() != null) {
-            table = restaurantTableRepository.findById(request.getTableId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
-        }
-
         // Kiểm tra orderType
         OrderType orderType;
         try {
             orderType = OrderType.valueOf(request.getOrderType());
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Loại đơn hàng không hợp lệ: " + request.getOrderType());
+        }
+
+        // Kiểm tra bàn - chỉ bắt buộc nếu không phải TakeAway
+        RestaurantTable table = null;
+        if (orderType == OrderType.Takeaway) {
+            // TakeAway không cần bàn
+            if (request.getTableId() != null) {
+                throw new RuntimeException("Đơn hàng mang đi không cần bàn");
+            }
+        } else {
+            // Dinein bắt buộc phải có bàn
+            if (request.getTableId() == null) {
+                throw new RuntimeException("Đơn hàng tại chỗ phải có bàn");
+            }
+            table = restaurantTableRepository.findById(request.getTableId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
         }
 
         // Kiểm tra danh sách món ăn
@@ -206,20 +216,32 @@ public class OrderService {
             throw new RuntimeException("Không thể cập nhật đơn hàng đã hoàn thành");
         }
 
-        // Cập nhật table nếu thay đổi
-        if (request.getTableId() != null && !order.getTable().getId().equals(request.getTableId())) {
-            RestaurantTable newTable = restaurantTableRepository.findById(request.getTableId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
-            order.setTable(newTable);
-        }
-
         // Cập nhật orderType nếu có
+        OrderType newOrderType = order.getOrderType();
         if (request.getOrderType() != null) {
             try {
-                OrderType orderType = OrderType.valueOf(request.getOrderType());
-                order.setOrderType(orderType);
+                newOrderType = OrderType.valueOf(request.getOrderType());
+                order.setOrderType(newOrderType);
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Loại đơn hàng không hợp lệ: " + request.getOrderType());
+            }
+        }
+
+        // Cập nhật table theo orderType
+        if (newOrderType == OrderType.Takeaway) {
+            // TakeAway không cần bàn
+            if (request.getTableId() != null) {
+                throw new RuntimeException("Đơn hàng mang đi không cần bàn");
+            }
+            order.setTable(null);
+        } else {
+            // Dinein bắt buộc phải có bàn
+            if (request.getTableId() != null) {
+                RestaurantTable newTable = restaurantTableRepository.findById(request.getTableId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
+                order.setTable(newTable);
+            } else if (order.getTable() == null) {
+                throw new RuntimeException("Đơn hàng tại chỗ phải có bàn");
             }
         }
 
