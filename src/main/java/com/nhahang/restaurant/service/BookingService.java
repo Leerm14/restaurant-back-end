@@ -66,7 +66,7 @@ public class BookingService {
         booking.setTable(table);
         booking.setBookingTime(request.getBookingTime());
         booking.setNumGuests(request.getNumGuests());
-        booking.setStatus(BookingStatus.Pending);
+        booking.setStatus(BookingStatus.Confirmed);
 
         Booking savedBooking = bookingRepository.save(booking);
 

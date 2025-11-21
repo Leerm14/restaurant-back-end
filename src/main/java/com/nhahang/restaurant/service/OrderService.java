@@ -171,23 +171,34 @@ public class OrderService {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        for (OrderItemRequest itemRequest : request.getOrderItems()) {
-            MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn với ID: " + itemRequest.getMenuItemId()));
+        // Gộp các món ăn trùng menuItemId
+        var mergedItems = request.getOrderItems().stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemRequest::getMenuItemId,
+                        Collectors.summingInt(OrderItemRequest::getQuantity)
+                ));
+
+        for (var entry : mergedItems.entrySet()) {
+            Integer menuItemId = entry.getKey();
+            Integer totalQuantity = entry.getValue();
+
+            MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn với ID: " + menuItemId));
             if (menuItem.getStatus() != MenuItemStatus.Available) {
                 throw new RuntimeException("Món ăn không khả dụng: " + menuItem.getName());
             }
-            if (itemRequest.getQuantity() <= 0) {
+            if (totalQuantity <= 0) {
                 throw new RuntimeException("Số lượng món ăn phải lớn hơn 0");
             }
+            
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setMenuItem(menuItem);
-            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setQuantity(totalQuantity);
             orderItem.setPriceAtOrder(menuItem.getPrice());
 
             orderItems.add(orderItem);
-            BigDecimal itemTotal = menuItem.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            BigDecimal itemTotal = menuItem.getPrice().multiply(BigDecimal.valueOf(totalQuantity));
             totalAmount = totalAmount.add(itemTotal);
         }
 
@@ -249,23 +260,38 @@ public class OrderService {
         orderRepository.save(order);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
-        for (OrderItemRequest itemRequest : request.getOrderItems()) {
-            MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn với ID: " + itemRequest.getMenuItemId()));
+        
+        // Gộp các món ăn trùng menuItemId
+        var mergedItems = request.getOrderItems().stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemRequest::getMenuItemId,
+                        Collectors.summingInt(OrderItemRequest::getQuantity)
+                ));
+
+        for (var entry : mergedItems.entrySet()) {
+            Integer menuItemId = entry.getKey();
+            Integer totalQuantity = entry.getValue();
+
+            MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn với ID: " + menuItemId));
 
             if (menuItem.getStatus() != MenuItemStatus.Available) {
                 throw new RuntimeException("Món ăn '" + menuItem.getName() + "' hiện không khả dụng");
             }
 
+            if (totalQuantity <= 0) {
+                throw new RuntimeException("Số lượng món ăn phải lớn hơn 0");
+            }
+
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setMenuItem(menuItem);
-            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setQuantity(totalQuantity);
             orderItem.setPriceAtOrder(menuItem.getPrice());
 
             order.getOrderItems().add(orderItem);
 
-            BigDecimal itemTotal = menuItem.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            BigDecimal itemTotal = menuItem.getPrice().multiply(BigDecimal.valueOf(totalQuantity));
             totalAmount = totalAmount.add(itemTotal);
         }
 
