@@ -75,6 +75,28 @@ public class OrderService {
     }
 
     /**
+     * Lấy đơn hàng theo email của user
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getOrdersByUserEmail(String email) {
+        List<Order> orders = orderRepository.findByUserEmail(email);
+        return orders.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy đơn hàng theo số điện thoại của user
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getOrdersByUserPhoneNumber(String phoneNumber) {
+        List<Order> orders = orderRepository.findByUserPhoneNumber(phoneNumber);
+        return orders.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Lấy đơn hàng theo table ID
      */
     @Transactional(readOnly = true)

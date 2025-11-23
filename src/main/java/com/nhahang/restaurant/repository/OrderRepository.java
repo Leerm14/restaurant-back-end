@@ -23,4 +23,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    @Query("SELECT o FROM Order o WHERE o.user.email = :email")
+    List<Order> findByUserEmail(@Param("email") String email);
+
+    @Query("SELECT o FROM Order o WHERE o.user.phoneNumber = :phoneNumber")
+    List<Order> findByUserPhoneNumber(@Param("phoneNumber") String phoneNumber);
 }

@@ -73,6 +73,40 @@ public class OrderController {
     }
 
     /**
+     * Lấy đơn hàng theo email của user
+     */
+    @GetMapping("/search/email")
+     @PreAuthorize("hasAuthority('READ_ORDER')")
+    public ResponseEntity<List<OrderDTO>> getOrdersByUserEmail(@RequestParam String email) {
+        try {
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            List<OrderDTO> orders = orderService.getOrdersByUserEmail(email.trim());
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Lấy đơn hàng theo số điện thoại của user
+     */
+    @GetMapping("/search/phone")
+     @PreAuthorize("hasAuthority('READ_ORDER')")
+    public ResponseEntity<List<OrderDTO>> getOrdersByUserPhoneNumber(@RequestParam String phoneNumber) {
+        try {
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            List<OrderDTO> orders = orderService.getOrdersByUserPhoneNumber(phoneNumber.trim());
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * Lấy đơn hàng theo table ID
      */
     @GetMapping("/table/{tableId}")
