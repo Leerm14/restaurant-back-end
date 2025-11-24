@@ -185,7 +185,7 @@ public class OrderService {
             boolean hasValidBooking = bookings.stream().anyMatch(b ->
                 b.getUser() != null &&
                 b.getUser().getId().equals(request.getUserId()) &&
-                b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed &&
+                (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)  && 
                 b.getBookingTime() != null &&
                 (b.getBookingTime().isAfter(now.minusMinutes(30)) && b.getBookingTime().isBefore(now.plusHours(2)))
             );
