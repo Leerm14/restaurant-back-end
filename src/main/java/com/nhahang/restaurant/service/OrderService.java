@@ -187,7 +187,7 @@ public class OrderService {
                 b.getUser().getId().equals(request.getUserId()) &&
                 (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)  && 
                 b.getBookingTime() != null &&
-                (b.getBookingTime().isAfter(now.minusMinutes(30)) && b.getBookingTime().isBefore(now.plusHours(2)))
+                (b.getBookingTime().isAfter(now.minusMinutes(30)))
             );
             if (!hasValidBooking) {
                 throw new RuntimeException("Đơn tại chỗ phải có booking bàn hợp lệ và đúng thời gian đặt!");
@@ -415,6 +415,30 @@ public class OrderService {
 
         if (order.getStatus() == OrderStatus.Completed) {
             throw new RuntimeException("Không thể hủy đơn hàng đã hoàn thành");
+        }
+
+        // Nếu là Dinein, tìm và hủy booking liên quan
+        if (order.getOrderType() == OrderType.Dinein && order.getTable() != null && order.getUser() != null) {
+            List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
+            LocalDateTime now = LocalDateTime.now();
+            Booking matched = bookings.stream()
+                .filter(b -> b.getUser() != null && b.getUser().getId().equals(order.getUser().getId())
+                        && (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)
+                        && b.getBookingTime() != null
+                        && (b.getBookingTime().isAfter(now.minusDays(1)) && b.getBookingTime().isBefore(now.plusDays(2)))
+                )
+                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime())) // booking mới nhất trước
+                .findFirst().orElse(null);
+            if (matched != null) {
+                matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Cancelled);
+                bookingRepository.save(matched);
+            }
+            // Chuyển trạng thái bàn về Available
+            RestaurantTable table = order.getTable();
+            if (table != null) {
+                table.setStatus(com.nhahang.restaurant.model.TableStatus.Available);
+                restaurantTableRepository.save(table);
+            }
         }
 
         order.setStatus(OrderStatus.Cancelled);
