@@ -455,6 +455,24 @@ public class OrderService {
             dto.setOrderItems(orderItemDTOs);
         }
 
+        // Thêm thời gian đặt bàn nếu là Dine-in
+        if (order.getOrderType() == OrderType.Dinein && order.getTable() != null && order.getUser() != null) {
+            // Lấy booking hợp lệ gần nhất cho user và bàn này
+            List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
+            LocalDateTime now = LocalDateTime.now();
+            Booking matched = bookings.stream()
+                .filter(b -> b.getUser() != null && b.getUser().getId().equals(order.getUser().getId())
+                        && (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)
+                        && b.getBookingTime() != null
+                        && (b.getBookingTime().isAfter(now.minusDays(1)) && b.getBookingTime().isBefore(now.plusDays(2)))
+                )
+                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime())) // booking mới nhất trước
+                .findFirst().orElse(null);
+            if (matched != null) {
+                dto.setBookingTime(matched.getBookingTime());
+            }
+        }
+
         return dto;
     }
 
