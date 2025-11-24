@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final RestaurantTableRepository restaurantTableRepository;
     private final MenuItemRepository menuItemRepository;
+    private final BookingRepository bookingRepository;
 
     /**
      * Lấy tất cả đơn hàng
@@ -170,12 +172,26 @@ public class OrderService {
                 throw new RuntimeException("Đơn hàng mang đi không cần bàn");
             }
         } else {
-            // Dinein bắt buộc phải có bàn
+            // Dinein bắt buộc phải có bàn và booking hợp lệ
             if (request.getTableId() == null) {
                 throw new RuntimeException("Đơn hàng tại chỗ phải có bàn");
             }
             table = restaurantTableRepository.findById(request.getTableId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
+
+            // Kiểm tra booking hợp lệ
+            LocalDateTime now = LocalDateTime.now();
+            List<Booking> bookings = bookingRepository.findByTableId(table.getId());
+            boolean hasValidBooking = bookings.stream().anyMatch(b ->
+                b.getUser() != null &&
+                b.getUser().getId().equals(request.getUserId()) &&
+                b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed &&
+                b.getBookingTime() != null &&
+                (b.getBookingTime().isAfter(now.minusMinutes(30)) && b.getBookingTime().isBefore(now.plusHours(2)))
+            );
+            if (!hasValidBooking) {
+                throw new RuntimeException("Đơn tại chỗ phải có booking bàn hợp lệ và đúng thời gian đặt!");
+            }
         }
 
         // Kiểm tra danh sách món ăn
@@ -230,6 +246,40 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         return convertToDTO(savedOrder);
+    }
+
+    /**
+     * Quét và tự động hủy các order Dine-in quá thời gian booking, chuyển bàn về Available
+     * (Nên gọi hàm này định kỳ bằng scheduler hoặc khi truy vấn danh sách order)
+     * Scheduler: Tự động hủy order Dine-in quá hạn mỗi ngày lúc 0h05
+     */
+    @Transactional
+    @Scheduled(cron = "0 5 0 * * *") // 0h05 mỗi ngày
+    public void autoCancelExpiredDineinOrders() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Order> dineinOrders = orderRepository.findAll().stream()
+                .filter(o -> o.getOrderType() == OrderType.Dinein && o.getStatus() == OrderStatus.Pending)
+                .collect(Collectors.toList());
+        for (Order order : dineinOrders) {
+            List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
+            boolean expired = bookings.stream().noneMatch(b ->
+                b.getUser() != null &&
+                b.getUser().getId().equals(order.getUser().getId()) &&
+                b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed &&
+                b.getBookingTime() != null &&
+                (b.getBookingTime().isAfter(now.minusMinutes(30)) && b.getBookingTime().isBefore(now.plusHours(2)))
+            );
+            if (expired) {
+                order.setStatus(OrderStatus.Cancelled);
+                orderRepository.save(order);
+                // Chuyển trạng thái bàn về Available
+                RestaurantTable table = order.getTable();
+                if (table != null) {
+                    table.setStatus(com.nhahang.restaurant.model.TableStatus.Available);
+                    restaurantTableRepository.save(table);
+                }
+            }
+        }
     }
 
     /**
