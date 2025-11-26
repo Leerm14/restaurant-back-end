@@ -1,17 +1,20 @@
 package com.nhahang.restaurant.controller;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nhahang.restaurant.dto.PaymentCreateRequest;
 import com.nhahang.restaurant.dto.PaymentDTO;
 import com.nhahang.restaurant.dto.PaymentMethodDistributionDTO;
 import com.nhahang.restaurant.dto.RevenueReportDTO;
 import com.nhahang.restaurant.service.PaymentService;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+// IMPORT MỚI CHO PAYOS V2
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,42 +28,44 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
+
     /**
      * API 1: TẠO LINK THANH TOÁN PAYOS
-     * Frontend gọi API này khi user chọn thanh toán PayOS
+     * Thay đổi kiểu trả về thành CreatePaymentLinkResponse
      */
     @PostMapping("/payos/{orderId}")
-    @PreAuthorize("hasAuthority('CREATE_PAYMENT')") 
-    public ResponseEntity<?> createPayOSLink(@PathVariable Integer orderId) {
+    @PreAuthorize("hasAuthority('CREATE_PAYMENT')")
+    public ResponseEntity<CreatePaymentLinkResponse> createPayOSLink(@PathVariable Integer orderId) {
         try {
-            Object data = paymentService.createPayOSLink(orderId);
+            CreatePaymentLinkResponse data = paymentService.createPayOSLink(orderId);
             return ResponseEntity.ok(data);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
 
     /**
-     * API 2: WEBHOOK (PayOS gọi vào đây)
-     * Không cần token authentication (đã config ở SecurityConfig)
+     * API 2: WEBHOOK
+     * PayOS gọi vào đây khi thanh toán thành công
      */
     @PostMapping("/payos/webhook")
-    public ResponseEntity<String> handlePayOSWebhook(@RequestBody Object webhook) {
+    public ResponseEntity<String> handlePayOSWebhook(@RequestBody ObjectNode webhookBody) {
         try {
-            paymentService.handlePayOSWebhook(webhook);
+            paymentService.handlePayOSWebhook(webhookBody);
             return ResponseEntity.ok("Webhook received");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
-    /**
-     * Lấy tất cả thanh toán
-     */
+    // --- CÁC API KHÁC GIỮ NGUYÊN ---
+
     @GetMapping
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentDTO>> getAllPayments() {
-        try {          
+        try {
             List<PaymentDTO> payments = paymentService.getAllPayments();
             return ResponseEntity.ok(payments);
         } catch (Exception e) {
@@ -68,11 +73,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy thanh toán theo ID
-     */
     @GetMapping("/{id}")
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<PaymentDTO> getPaymentById(@PathVariable Integer id) {
         try {
             PaymentDTO payment = paymentService.getPaymentById(id);
@@ -84,11 +86,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy thanh toán theo order ID
-     */
     @GetMapping("/order/{orderId}")
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<PaymentDTO> getPaymentByOrderId(@PathVariable Integer orderId) {
         try {
             PaymentDTO payment = paymentService.getPaymentByOrderId(orderId);
@@ -100,13 +99,9 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy thanh toán theo trạng thái
-     */
     @GetMapping("/status/{status}")
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
-    public ResponseEntity<List<PaymentDTO>> getPaymentsByStatus(
-            @PathVariable String status) {
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    public ResponseEntity<List<PaymentDTO>> getPaymentsByStatus(@PathVariable String status) {
         try {
             List<PaymentDTO> payments = paymentService.getPaymentsByStatus(status);
             return ResponseEntity.ok(payments);
@@ -117,11 +112,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy thanh toán theo phương thức thanh toán
-     */
     @GetMapping("/method/{method}")
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentDTO>> getPaymentsByMethod(@PathVariable String method) {
         try {
             List<PaymentDTO> payments = paymentService.getPaymentsByMethod(method);
@@ -133,11 +125,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Tạo thanh toán mới
-     */
     @PostMapping
-     @PreAuthorize("hasAuthority('CREATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('CREATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> createPayment(@RequestBody PaymentCreateRequest request) {
         try {
             PaymentDTO createdPayment = paymentService.createPayment(request);
@@ -149,11 +138,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Xác nhận thanh toán thành công
-     */
     @PatchMapping("/{id}/confirm")
-     @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> confirmPayment(@PathVariable Integer id) {
         try {
             PaymentDTO confirmedPayment = paymentService.confirmPayment(id);
@@ -165,11 +151,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Đánh dấu thanh toán thất bại
-     */
     @PatchMapping("/{id}/fail")
-     @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
+    @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
     public ResponseEntity<PaymentDTO> failPayment(@PathVariable Integer id) {
         try {
             PaymentDTO failedPayment = paymentService.failPayment(id);
@@ -181,14 +164,9 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Cập nhật trạng thái thanh toán
-     */
     @PatchMapping("/{id}/status")
-     @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
-    public ResponseEntity<PaymentDTO> updatePaymentStatus(
-            @PathVariable Integer id,
-            @RequestBody Map<String, String> request) {
+    @PreAuthorize("hasAuthority('UPDATE_PAYMENT')")
+    public ResponseEntity<PaymentDTO> updatePaymentStatus(@PathVariable Integer id, @RequestBody Map<String, String> request) {
         try {
             String status = request.get("status");
             if (status == null || status.isEmpty()) {
@@ -203,11 +181,8 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Xóa thanh toán
-     */
     @DeleteMapping("/{id}")
-     @PreAuthorize("hasAuthority('DELETE_PAYMENT')")
+    @PreAuthorize("hasAuthority('DELETE_PAYMENT')")
     public ResponseEntity<Void> deletePayment(@PathVariable Integer id) {
         try {
             paymentService.deletePayment(id);
@@ -219,28 +194,15 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy báo cáo doanh thu theo khoảng thời gian
-     * @param from Ngày bắt đầu (format: yyyy-MM-dd), mặc định là đầu tháng hiện tại
-     * @param to Ngày kết thúc (format: yyyy-MM-dd), mặc định là cuối ngày hôm nay
-     */
     @GetMapping("/revenue-report")
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<RevenueReportDTO> getRevenueReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         try {
-            // Nếu không có tham số from, lấy từ đầu tháng hiện tại
-            LocalDateTime fromDate = (from != null) 
-                ? from.atStartOfDay() 
-                : LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            
-            // Nếu không có tham số to, lấy đến cuối ngày hôm nay
-            LocalDateTime toDate = (to != null) 
-                ? to.atTime(LocalTime.MAX) 
-                : LocalDate.now().atTime(LocalTime.MAX);
+            LocalDateTime fromDate = (from != null) ? from.atStartOfDay() : LocalDate.now().withDayOfMonth(1).atStartOfDay();
+            LocalDateTime toDate = (to != null) ? to.atTime(LocalTime.MAX) : LocalDate.now().atTime(LocalTime.MAX);
 
-            // Kiểm tra ngày hợp lệ
             if (fromDate.isAfter(toDate)) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
@@ -252,34 +214,20 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy phân phối phương thức thanh toán
-     * @param from Ngày bắt đầu (format: yyyy-MM-dd), mặc định là đầu tháng hiện tại
-     * @param to Ngày kết thúc (format: yyyy-MM-dd), mặc định là cuối ngày hôm nay
-     */
     @GetMapping("/payment-method-distribution")
-     @PreAuthorize("hasAuthority('READ_PAYMENT')")
+    @PreAuthorize("hasAuthority('READ_PAYMENT')")
     public ResponseEntity<List<PaymentMethodDistributionDTO>> getPaymentMethodDistribution(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         try {
-            // Nếu không có tham số from, lấy từ đầu tháng hiện tại
-            LocalDateTime fromDate = (from != null) 
-                ? from.atStartOfDay() 
-                : LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            
-            // Nếu không có tham số to, lấy đến cuối ngày hôm nay
-            LocalDateTime toDate = (to != null) 
-                ? to.atTime(LocalTime.MAX) 
-                : LocalDate.now().atTime(LocalTime.MAX);
+            LocalDateTime fromDate = (from != null) ? from.atStartOfDay() : LocalDate.now().withDayOfMonth(1).atStartOfDay();
+            LocalDateTime toDate = (to != null) ? to.atTime(LocalTime.MAX) : LocalDate.now().atTime(LocalTime.MAX);
 
-            // Kiểm tra ngày hợp lệ
             if (fromDate.isAfter(toDate)) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
 
-            List<PaymentMethodDistributionDTO> distribution = 
-                    paymentService.getPaymentMethodDistribution(fromDate, toDate);
+            List<PaymentMethodDistributionDTO> distribution = paymentService.getPaymentMethodDistribution(fromDate, toDate);
             return ResponseEntity.ok(distribution);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

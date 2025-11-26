@@ -1,5 +1,7 @@
 package com.nhahang.restaurant.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nhahang.restaurant.dto.PaymentCreateRequest;
 import com.nhahang.restaurant.dto.PaymentDTO;
 import com.nhahang.restaurant.dto.PaymentMethodDistributionDTO;
@@ -8,16 +10,24 @@ import com.nhahang.restaurant.model.OrderStatus;
 import com.nhahang.restaurant.model.PaymentMethod;
 import com.nhahang.restaurant.model.PaymentStatus;
 import com.nhahang.restaurant.model.entity.Order;
+import com.nhahang.restaurant.model.entity.OrderItem;
 import com.nhahang.restaurant.model.entity.Payment;
+import com.nhahang.restaurant.repository.BookingRepository;
 import com.nhahang.restaurant.repository.OrderRepository;
 import com.nhahang.restaurant.repository.PaymentRepository;
+import com.nhahang.restaurant.repository.RestaurantTableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+// IMPORT MỚI CHÍNH XÁC CHO PAYOS V2
+import vn.payos.PayOS;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
+import vn.payos.model.webhooks.Webhook;
+import vn.payos.model.webhooks.WebhookData;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,15 +43,155 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
-    private final com.nhahang.restaurant.repository.BookingRepository bookingRepository;
-    private final com.nhahang.restaurant.repository.RestaurantTableRepository restaurantTableRepository;
+    private final BookingRepository bookingRepository;
+    private final RestaurantTableRepository restaurantTableRepository;
+    private final PayOS payOS;
+
     @Value("${payos.return-url}")
     private String returnUrl;
     @Value("${payos.cancel-url}")
     private String cancelUrl;
+
     /**
-     * Lấy tất cả thanh toán
+     * TẠO LINK THANH TOÁN PAYOS (V2)
      */
+    @Transactional
+    public CreatePaymentLinkResponse createPayOSLink(Integer orderId) throws Exception {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + orderId));
+
+        if (order.getTotalAmount().longValue() <= 0) {
+            throw new RuntimeException("Số tiền thanh toán không hợp lệ.");
+        }
+
+        // 1. Cập nhật hoặc tạo Payment trong Database
+        Payment payment = paymentRepository.findByOrderId(orderId).orElse(null);
+        
+        if (payment == null) {
+            payment = new Payment();
+            payment.setOrder(order);
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(PaymentMethod.PayOS);
+            payment.setStatus(PaymentStatus.Pending);
+            paymentRepository.save(payment);
+        } else {
+            if (payment.getStatus() == PaymentStatus.Successful) {
+                throw new RuntimeException("Đơn hàng này đã được thanh toán thành công.");
+            }
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(PaymentMethod.PayOS);
+            payment.setStatus(PaymentStatus.Pending);
+            paymentRepository.save(payment);
+        }
+
+        // 2. Tạo danh sách sản phẩm (PaymentLinkItem)
+        List<PaymentLinkItem> items = new ArrayList<>();
+        for (OrderItem orderItem : order.getOrderItems()) {
+            String itemName = orderItem.getMenuItem().getName();
+            if (itemName.length() > 50) itemName = itemName.substring(0, 50);
+            
+            // SỬA LỖI Ở ĐÂY: Đổi .intValue() thành .longValue()
+            items.add(PaymentLinkItem.builder()
+                    .name(itemName)
+                    .quantity(orderItem.getQuantity())
+                    .price(orderItem.getPriceAtOrder().longValue()) // [Fix] Sử dụng longValue()
+                    .build());
+        }
+
+        // 3. Tạo Request tạo link
+        long expiredAt = (System.currentTimeMillis() / 1000) + (15 * 60); // Hết hạn sau 15 phút
+        String finalReturnUrl = returnUrl + "?orderId=" + orderId;
+        String finalCancelUrl = cancelUrl + "?orderId=" + orderId;
+        String description = "Thanh toan don " + orderId;
+
+        // SỬA LỖI Ở ĐÂY: Đổi .intValue() thành .longValue()
+        CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
+                .orderCode(Long.valueOf(orderId))
+                .amount(order.getTotalAmount().longValue()) // [Fix] Sử dụng longValue()
+                .description(description)
+                .items(items)
+                .returnUrl(finalReturnUrl)
+                .cancelUrl(finalCancelUrl)
+                .expiredAt(expiredAt)
+                .build();
+
+        // Gọi API qua paymentRequests()
+        return payOS.paymentRequests().create(request);
+    }
+
+    /**
+     * XỬ LÝ WEBHOOK TỪ PAYOS (V2)
+     */
+    @Transactional
+    public void handlePayOSWebhook(ObjectNode webhookBody) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Webhook webhook = objectMapper.treeToValue(webhookBody, Webhook.class);
+        
+        // Xác thực Webhook (V2)
+        WebhookData data = payOS.webhooks().verify(webhook);
+
+        Integer orderId = (int) data.getOrderCode().longValue(); // Ép kiểu về int cho phù hợp DB
+        String transactionId = data.getReference();
+
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin thanh toán cho Order ID: " + orderId));
+
+        if (payment.getStatus() != PaymentStatus.Successful) {
+            payment.setTransactionId(transactionId);
+            payment.setStatus(PaymentStatus.Successful);
+            paymentRepository.save(payment);
+
+            // Cập nhật trạng thái đơn hàng và bàn
+            confirmPaymentInternal(payment.getId());
+        }
+    }
+
+    /**
+     * Logic nội bộ xác nhận thanh toán
+     */
+    private PaymentDTO confirmPaymentInternal(Integer paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán với ID: " + paymentId));
+
+        if (payment.getStatus() == PaymentStatus.Failed) {
+            throw new RuntimeException("Không thể xác nhận thanh toán đã thất bại");
+        }
+        
+        if (payment.getStatus() != PaymentStatus.Successful) {
+            payment.setStatus(PaymentStatus.Successful);
+            paymentRepository.save(payment);
+        }
+
+        Order order = payment.getOrder();
+        if (order != null && order.getStatus() != OrderStatus.Completed) {
+            order.setStatus(OrderStatus.Completed);
+            orderRepository.save(order);
+
+            // Logic giải phóng bàn nếu là Dine-in
+            if (order.getOrderType() == com.nhahang.restaurant.model.OrderType.Dinein && order.getTable() != null) {
+                List<com.nhahang.restaurant.model.entity.Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
+                
+                com.nhahang.restaurant.model.entity.Booking activeBooking = bookings.stream()
+                    .filter(b -> b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed 
+                              || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)
+                    .findFirst()
+                    .orElse(null);
+
+                if (activeBooking != null) {
+                    activeBooking.setStatus(com.nhahang.restaurant.model.BookingStatus.Completed);
+                    bookingRepository.save(activeBooking);
+                }
+
+                com.nhahang.restaurant.model.entity.RestaurantTable table = order.getTable();
+                table.setStatus(com.nhahang.restaurant.model.TableStatus.Available); 
+                restaurantTableRepository.save(table);
+            }
+        }
+        return convertToDTO(payment);
+    }
+
+    // --- CÁC PHƯƠNG THỨC KHÁC GIỮ NGUYÊN ---
+
     @Transactional
     public List<PaymentDTO> getAllPayments() {
         return paymentRepository.findAll().stream()
@@ -49,10 +199,6 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
-
-    /**
-     * Lấy thanh toán theo ID
-     */
     @Transactional
     public PaymentDTO getPaymentById(Integer id) {
         Payment payment = paymentRepository.findById(id)
@@ -60,9 +206,6 @@ public class PaymentService {
         return convertToDTO(payment);
     }
 
-    /**
-     * Lấy thanh toán theo order ID
-     */
     @Transactional
     public PaymentDTO getPaymentByOrderId(Integer orderId) {
         Payment payment = paymentRepository.findAll().stream()
@@ -72,17 +215,12 @@ public class PaymentService {
         return convertToDTO(payment);
     }
 
-    /**
-     * Lấy thanh toán theo trạng thái
-     */
     @Transactional
     public List<PaymentDTO> getPaymentsByStatus(String status) {
         try {
             PaymentStatus paymentStatus = PaymentStatus.valueOf(status);
-            List<Payment> payments = paymentRepository.findAll().stream()
+            return paymentRepository.findAll().stream()
                     .filter(p -> p.getStatus() == paymentStatus)
-                    .collect(Collectors.toList());
-            return payments.stream()
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
         } catch (IllegalArgumentException e) {
@@ -90,17 +228,12 @@ public class PaymentService {
         }
     }
 
-    /**
-     * Lấy thanh toán theo phương thức thanh toán
-     */
     @Transactional
     public List<PaymentDTO> getPaymentsByMethod(String method) {
         try {
             PaymentMethod paymentMethod = PaymentMethod.valueOf(method);
-            List<Payment> payments = paymentRepository.findAll().stream()
+            return paymentRepository.findAll().stream()
                     .filter(p -> p.getPaymentMethod() == paymentMethod)
-                    .collect(Collectors.toList());
-            return payments.stream()
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
         } catch (IllegalArgumentException e) {
@@ -108,38 +241,29 @@ public class PaymentService {
         }
     }
 
-    /**
-     * Tạo thanh toán mới
-     */
     @Transactional
     public PaymentDTO createPayment(PaymentCreateRequest request) {
-        // Kiểm tra order
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + request.getOrderId()));
 
-        // Kiểm tra order đã có payment chưa
         boolean hasPayment = paymentRepository.findAll().stream()
                 .anyMatch(p -> p.getOrder() != null && p.getOrder().getId().equals(request.getOrderId()));
         if (hasPayment) {
             throw new RuntimeException("Đơn hàng này đã có thanh toán");
         }
 
-        // Kiểm tra trạng thái order
         if (order.getStatus() == OrderStatus.Cancelled) {
             throw new RuntimeException("Không thể thanh toán cho đơn hàng đã bị hủy");
         }
 
-        // Kiểm tra số tiền
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Số tiền thanh toán phải lớn hơn 0");
         }
 
-        // Kiểm tra số tiền khớp với order
         if (request.getAmount().compareTo(order.getTotalAmount()) != 0) {
             throw new RuntimeException("Số tiền thanh toán không khớp với tổng tiền đơn hàng");
         }
 
-        // Kiểm tra payment method
         PaymentMethod paymentMethod;
         try {
             paymentMethod = PaymentMethod.valueOf(request.getPaymentMethod());
@@ -147,7 +271,6 @@ public class PaymentService {
             throw new RuntimeException("Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
         }
 
-        // Tạo payment
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setAmount(request.getAmount());
@@ -156,66 +279,14 @@ public class PaymentService {
         payment.setTransactionId(request.getTransactionId());
 
         Payment savedPayment = paymentRepository.save(payment);
-
         return convertToDTO(savedPayment);
     }
 
-    /**
-     * Xác nhận thanh toán thành công
-     */
     @Transactional
     public PaymentDTO confirmPayment(Integer id) {
-        Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán với ID: " + id));
-
-        if (payment.getStatus() == PaymentStatus.Successful) {
-            throw new RuntimeException("Thanh toán đã được xác nhận trước đó");
-        }
-
-        if (payment.getStatus() == PaymentStatus.Failed) {
-            throw new RuntimeException("Không thể xác nhận thanh toán đã thất bại");
-        }
-
-        payment.setStatus(PaymentStatus.Successful);
-
-        // 1. Cập nhật Order
-        Order order = payment.getOrder();
-        if (order != null) {
-            order.setStatus(OrderStatus.Completed);
-            orderRepository.save(order);
-
-            // 2. LOGIC MỚI: Cập nhật Booking và Table nếu là Dine-in
-            if (order.getOrderType() == com.nhahang.restaurant.model.OrderType.Dinein
-                && order.getTable() != null) {
-
-                // Tìm booking đang active của bàn này
-                java.util.List<com.nhahang.restaurant.model.entity.Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
-
-                // Lấy booking Confirmed gần nhất (đang diễn ra)
-                com.nhahang.restaurant.model.entity.Booking activeBooking = bookings.stream()
-                    .filter(b -> b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed)
-                    .findFirst()
-                    .orElse(null);
-
-                if (activeBooking != null) {
-                    activeBooking.setStatus(com.nhahang.restaurant.model.BookingStatus.Completed);
-                    bookingRepository.save(activeBooking);
-                }
-
-                // Giải phóng bàn (Chuyển về Available hoặc Cleaning)
-                com.nhahang.restaurant.model.entity.RestaurantTable table = order.getTable();
-                table.setStatus(com.nhahang.restaurant.model.TableStatus.Available); // Hoặc Cleaning
-                restaurantTableRepository.save(table);
-            }
-        }
-
-        Payment updatedPayment = paymentRepository.save(payment);
-        return convertToDTO(updatedPayment);
+        return confirmPaymentInternal(id);
     }
 
-    /**
-     * Đánh dấu thanh toán thất bại
-     */
     @Transactional
     public PaymentDTO failPayment(Integer id) {
         Payment payment = paymentRepository.findById(id)
@@ -234,9 +305,6 @@ public class PaymentService {
         return convertToDTO(updatedPayment);
     }
 
-    /**
-     * Cập nhật trạng thái thanh toán
-     */
     @Transactional
     public PaymentDTO updatePaymentStatus(Integer id, String status) {
         Payment payment = paymentRepository.findById(id)
@@ -244,32 +312,25 @@ public class PaymentService {
 
         try {
             PaymentStatus newStatus = PaymentStatus.valueOf(status);
-
-            // Kiểm tra logic chuyển trạng thái
             if (payment.getStatus() == PaymentStatus.Successful && newStatus != PaymentStatus.Successful) {
                 throw new RuntimeException("Không thể thay đổi trạng thái thanh toán đã thành công");
             }
 
             payment.setStatus(newStatus);
 
-            // Nếu chuyển sang Successful, cập nhật order
             if (newStatus == PaymentStatus.Successful && payment.getOrder() != null) {
-                Order order = payment.getOrder();
-                order.setStatus(OrderStatus.Completed);
-                orderRepository.save(order);
+                confirmPaymentInternal(id); // Tái sử dụng logic confirm
+            } else {
+                paymentRepository.save(payment);
             }
-
-            Payment updatedPayment = paymentRepository.save(payment);
-            return convertToDTO(updatedPayment);
+            
+            return convertToDTO(payment);
 
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Trạng thái thanh toán không hợp lệ: " + status);
         }
     }
 
-    /**
-     * Xóa thanh toán
-     */
     @Transactional
     public void deletePayment(Integer id) {
         Payment payment = paymentRepository.findById(id)
@@ -282,9 +343,6 @@ public class PaymentService {
         paymentRepository.delete(payment);
     }
 
-    /**
-     * Chuyển đổi Payment entity sang PaymentDTO
-     */
     private PaymentDTO convertToDTO(Payment payment) {
         PaymentDTO dto = new PaymentDTO();
         dto.setId(payment.getId());
@@ -297,12 +355,8 @@ public class PaymentService {
         return dto;
     }
 
-    /**
-     * Lấy báo cáo doanh thu theo khoảng thời gian
-     */
     @Transactional
     public RevenueReportDTO getRevenueReport(LocalDateTime fromDate, LocalDateTime toDate) {
-        // Lấy tất cả payment thành công trong khoảng thời gian
         List<Payment> payments = paymentRepository.findByStatusAndPaymentTimeBetween(
                 PaymentStatus.Successful, fromDate, toDate);
 
@@ -311,7 +365,6 @@ public class PaymentService {
         report.setToDate(toDate);
 
         if (payments.isEmpty()) {
-            // Nếu không có giao dịch nào, trả về report với giá trị 0
             report.setTotalRevenue(BigDecimal.ZERO);
             report.setTotalTransactions(0L);
             report.setAverageTransactionValue(BigDecimal.ZERO);
@@ -324,15 +377,12 @@ public class PaymentService {
             return report;
         }
 
-        // Tính tổng doanh thu
         BigDecimal totalRevenue = payments.stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Tính tổng số giao dịch
         long totalTransactions = payments.size();
 
-        // Tính giá trị trung bình mỗi giao dịch
         BigDecimal averageTransactionValue = totalRevenue.divide(
                 BigDecimal.valueOf(totalTransactions), 2, RoundingMode.HALF_UP);
 
@@ -350,17 +400,23 @@ public class PaymentService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
         report.setCashTransactions((long) cashPayments.size());
 
+        // PayOS (Tạm thời gộp vào QRCode hoặc CreditCard tùy logic hiển thị, ở đây để riêng hoặc map vào 1 loại)
+        // Ví dụ: PayOS coi như QR Code
+        List<Payment> payOSPayments = payments.stream()
+                .filter(p -> p.getPaymentMethod() == PaymentMethod.PayOS)
+                .collect(Collectors.toList());
+        report.setQrCodeRevenue(payOSPayments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        report.setQrCodeTransactions((long) payOSPayments.size());
+
         return report;
     }
 
-    /**
-     * Lấy phân phối phương thức thanh toán
-     */
     @Transactional
     public List<PaymentMethodDistributionDTO> getPaymentMethodDistribution(
             LocalDateTime fromDate, LocalDateTime toDate) {
         
-        // Lấy tất cả payment thành công trong khoảng thời gian
         List<Payment> payments = paymentRepository.findByStatusAndPaymentTimeBetween(
                 PaymentStatus.Successful, fromDate, toDate);
 
@@ -368,16 +424,13 @@ public class PaymentService {
             return new ArrayList<>();
         }
 
-        // Tính tổng tiền
         BigDecimal grandTotal = payments.stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Nhóm theo phương thức thanh toán
         Map<PaymentMethod, List<Payment>> groupedByMethod = payments.stream()
                 .collect(Collectors.groupingBy(Payment::getPaymentMethod));
 
-        // Tạo danh sách kết quả
         List<PaymentMethodDistributionDTO> distribution = new ArrayList<>();
 
         for (Map.Entry<PaymentMethod, List<Payment>> entry : groupedByMethod.entrySet()) {
@@ -393,7 +446,6 @@ public class PaymentService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             dto.setTotalAmount(totalAmount);
 
-            // Tính phần trăm
             BigDecimal percentage = BigDecimal.ZERO;
             if (grandTotal.compareTo(BigDecimal.ZERO) > 0) {
                 percentage = totalAmount
@@ -405,23 +457,8 @@ public class PaymentService {
             distribution.add(dto);
         }
 
-        // Sắp xếp theo số lượng giao dịch giảm dần
         distribution.sort((a, b) -> b.getTransactionCount().compareTo(a.getTransactionCount()));
 
         return distribution;
-    }
-    /**
-     * TẠO LINK THANH TOÁN PAYOS
-     */
-    @Transactional
-    public Object createPayOSLink(Integer orderId) {
-        throw new RuntimeException("PayOS integration is disabled in this build. Configure PayOS dependency.");
-    }
-    /**
-     * XỬ LÝ WEBHOOK TỪ PAYOS
-     */
-    @Transactional
-    public void handlePayOSWebhook(Object webhookBody) {
-        throw new RuntimeException("PayOS webhook handling is disabled in this build.");
     }
 }
