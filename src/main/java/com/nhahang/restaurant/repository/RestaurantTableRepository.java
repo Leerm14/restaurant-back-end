@@ -16,7 +16,5 @@ public interface RestaurantTableRepository extends JpaRepository<RestaurantTable
 
     List<RestaurantTable> findByStatus(com.nhahang.restaurant.model.TableStatus status);
     
-    Page<RestaurantTable> findByStatus(com.nhahang.restaurant.model.TableStatus status, Pageable pageable);
-    
     long countByStatus(com.nhahang.restaurant.model.TableStatus status);
 }

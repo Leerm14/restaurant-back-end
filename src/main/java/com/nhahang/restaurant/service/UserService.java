@@ -47,19 +47,6 @@ public class UserService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-
-    /**
-     * Lấy tất cả người dùng với phân trang
-     */
-    @Transactional
-    public List<UserDTO> getAllUsers(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage = userRepository.findAll(pageable);
-        return userPage.getContent().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
     /**
      * Lấy người dùng theo ID
      */
@@ -119,30 +106,6 @@ public class UserService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-
-    /**
-     *  Lấy người dùng theo roleName với phân trang
-     */
-    @Transactional
-    public List<UserDTO> getUsersByRoleName(String roleName, int page, int size) {
-        RoleName roleNameEnum;
-        try {
-            roleNameEnum = RoleName.valueOf(roleName);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Vai trò không hợp lệ: " + roleName);
-        }
-        Role role = roleRepository.findByRoleName(roleNameEnum)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò: " + roleName));
-        
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage = userRepository.findAll(pageable);
-        
-        return userPage.getContent().stream()
-                .filter(user -> user.getRole() != null && user.getRole().getId().equals(role.getId()))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
     /**
      * Tạo người dùng mới
      */
