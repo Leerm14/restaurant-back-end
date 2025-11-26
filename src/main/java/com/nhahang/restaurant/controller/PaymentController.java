@@ -35,13 +35,15 @@ public class PaymentController {
      */
     @PostMapping("/payos/{orderId}")
     @PreAuthorize("hasAuthority('CREATE_PAYMENT')")
-    public ResponseEntity<CreatePaymentLinkResponse> createPayOSLink(@PathVariable Integer orderId) {
+    // Thay đổi kiểu trả về thành ResponseEntity<?> để có thể trả về String lỗi hoặc Object
+    public ResponseEntity<?> createPayOSLink(@PathVariable Integer orderId) {
         try {
             CreatePaymentLinkResponse data = paymentService.createPayOSLink(orderId);
             return ResponseEntity.ok(data);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            // QUAN TRỌNG: Trả về message lỗi thay vì null
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 

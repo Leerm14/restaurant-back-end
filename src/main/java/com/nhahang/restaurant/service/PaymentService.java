@@ -21,10 +21,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// IMPORT MỚI CHÍNH XÁC CHO PAYOS V2
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLink;
 import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
@@ -90,24 +90,22 @@ public class PaymentService {
             String itemName = orderItem.getMenuItem().getName();
             if (itemName.length() > 50) itemName = itemName.substring(0, 50);
             
-            // SỬA LỖI Ở ĐÂY: Đổi .intValue() thành .longValue()
             items.add(PaymentLinkItem.builder()
                     .name(itemName)
                     .quantity(orderItem.getQuantity())
-                    .price(orderItem.getPriceAtOrder().longValue()) // [Fix] Sử dụng longValue()
+                    .price(orderItem.getPriceAtOrder().longValue())
                     .build());
         }
 
         // 3. Tạo Request tạo link
-        long expiredAt = (System.currentTimeMillis() / 1000) + (15 * 60); // Hết hạn sau 15 phút
+        long expiredAt = (System.currentTimeMillis() / 1000) + (15 * 60);
         String finalReturnUrl = returnUrl + "?orderId=" + orderId;
         String finalCancelUrl = cancelUrl + "?orderId=" + orderId;
         String description = "Thanh toan don " + orderId;
 
-        // SỬA LỖI Ở ĐÂY: Đổi .intValue() thành .longValue()
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .orderCode(Long.valueOf(orderId))
-                .amount(order.getTotalAmount().longValue()) // [Fix] Sử dụng longValue()
+                .amount(order.getTotalAmount().longValue())
                 .description(description)
                 .items(items)
                 .returnUrl(finalReturnUrl)
@@ -115,8 +113,36 @@ public class PaymentService {
                 .expiredAt(expiredAt)
                 .build();
 
-        // Gọi API qua paymentRequests()
-        return payOS.paymentRequests().create(request);
+        // 4. Gọi PayOS - XỬ LÝ TRƯỜNG HỢP TRÙNG MÃ ĐƠN HÀNG
+        try {
+            return payOS.paymentRequests().create(request);
+        } catch (Exception e) {
+            if (e.getMessage().contains("already exists") || e.getMessage().contains("231")) {
+                System.out.println("Link đã tồn tại, đang lấy lại thông tin...");
+                
+                // Gọi API lấy thông tin link thanh toán (trả về PaymentLink, KHÔNG phải CreatePaymentLinkResponse)
+                PaymentLink existingLink = payOS.paymentRequests().get(Long.valueOf(orderId));
+                
+                // Map thủ công từ PaymentLink sang CreatePaymentLinkResponse
+                return CreatePaymentLinkResponse.builder()
+                        // Tự construct checkoutUrl từ ID
+                        .checkoutUrl("https://pay.payos.vn/web/" + existingLink.getId()) 
+                        .paymentLinkId(existingLink.getId())
+                        .orderCode(existingLink.getOrderCode())
+                        .amount(existingLink.getAmount())
+                        .currency("VND")
+                        .status(existingLink.getStatus())
+                        // Các trường dưới đây PaymentLink không có, điền rỗng để tránh lỗi null
+                        .qrCode("") 
+                        .accountName("")
+                        .accountNumber("")
+                        .bin("")
+                        .description(existingLink.getTransactions() != null && !existingLink.getTransactions().isEmpty() 
+                                ? existingLink.getTransactions().get(0).getDescription() : "")
+                        .build();
+            }
+            throw e;
+        }
     }
 
     /**
@@ -130,7 +156,7 @@ public class PaymentService {
         // Xác thực Webhook (V2)
         WebhookData data = payOS.webhooks().verify(webhook);
 
-        Integer orderId = (int) data.getOrderCode().longValue(); // Ép kiểu về int cho phù hợp DB
+        Integer orderId = (int) data.getOrderCode().longValue();
         String transactionId = data.getReference();
 
         Payment payment = paymentRepository.findByOrderId(orderId)
@@ -141,14 +167,10 @@ public class PaymentService {
             payment.setStatus(PaymentStatus.Successful);
             paymentRepository.save(payment);
 
-            // Cập nhật trạng thái đơn hàng và bàn
             confirmPaymentInternal(payment.getId());
         }
     }
 
-    /**
-     * Logic nội bộ xác nhận thanh toán
-     */
     private PaymentDTO confirmPaymentInternal(Integer paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán với ID: " + paymentId));
@@ -167,7 +189,6 @@ public class PaymentService {
             order.setStatus(OrderStatus.Completed);
             orderRepository.save(order);
 
-            // Logic giải phóng bàn nếu là Dine-in
             if (order.getOrderType() == com.nhahang.restaurant.model.OrderType.Dinein && order.getTable() != null) {
                 List<com.nhahang.restaurant.model.entity.Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
                 
@@ -319,7 +340,7 @@ public class PaymentService {
             payment.setStatus(newStatus);
 
             if (newStatus == PaymentStatus.Successful && payment.getOrder() != null) {
-                confirmPaymentInternal(id); // Tái sử dụng logic confirm
+                confirmPaymentInternal(id);
             } else {
                 paymentRepository.save(payment);
             }
@@ -390,8 +411,6 @@ public class PaymentService {
         report.setTotalTransactions(totalTransactions);
         report.setAverageTransactionValue(averageTransactionValue);
 
-        // Phân loại theo phương thức thanh toán
-        // Cash
         List<Payment> cashPayments = payments.stream()
                 .filter(p -> p.getPaymentMethod() == PaymentMethod.Cash)
                 .collect(Collectors.toList());
@@ -400,8 +419,6 @@ public class PaymentService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
         report.setCashTransactions((long) cashPayments.size());
 
-        // PayOS (Tạm thời gộp vào QRCode hoặc CreditCard tùy logic hiển thị, ở đây để riêng hoặc map vào 1 loại)
-        // Ví dụ: PayOS coi như QR Code
         List<Payment> payOSPayments = payments.stream()
                 .filter(p -> p.getPaymentMethod() == PaymentMethod.PayOS)
                 .collect(Collectors.toList());
