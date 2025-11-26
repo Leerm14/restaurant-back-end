@@ -40,6 +40,8 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final PayOS payOS;
+    private final com.nhahang.restaurant.repository.BookingRepository bookingRepository;
+    private final com.nhahang.restaurant.repository.RestaurantTableRepository restaurantTableRepository;
     @Value("${payos.return-url}")
     private String returnUrl;
 
@@ -214,11 +216,35 @@ public class PaymentService {
 
         payment.setStatus(PaymentStatus.Successful);
 
-        // Cập nhật trạng thái order thành Completed
+        // 1. Cập nhật Order
         Order order = payment.getOrder();
         if (order != null) {
             order.setStatus(OrderStatus.Completed);
             orderRepository.save(order);
+
+            // 2. LOGIC MỚI: Cập nhật Booking và Table nếu là Dine-in
+            if (order.getOrderType() == com.nhahang.restaurant.model.OrderType.Dinein
+                && order.getTable() != null) {
+
+                // Tìm booking đang active của bàn này
+                java.util.List<com.nhahang.restaurant.model.entity.Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
+
+                // Lấy booking Confirmed gần nhất (đang diễn ra)
+                com.nhahang.restaurant.model.entity.Booking activeBooking = bookings.stream()
+                    .filter(b -> b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed)
+                    .findFirst()
+                    .orElse(null);
+
+                if (activeBooking != null) {
+                    activeBooking.setStatus(com.nhahang.restaurant.model.BookingStatus.Completed);
+                    bookingRepository.save(activeBooking);
+                }
+
+                // Giải phóng bàn (Chuyển về Available hoặc Cleaning)
+                com.nhahang.restaurant.model.entity.RestaurantTable table = order.getTable();
+                table.setStatus(com.nhahang.restaurant.model.TableStatus.Available); // Hoặc Cleaning
+                restaurantTableRepository.save(table);
+            }
         }
 
         Payment updatedPayment = paymentRepository.save(payment);

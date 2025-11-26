@@ -29,6 +29,16 @@ public class BookingController {
         }
     }
 
+    @PostMapping("/{id}/check-in")
+    @PreAuthorize("hasAuthority('UPDATE_BOOKING')") 
+    public ResponseEntity<?> checkInBooking(@PathVariable Integer id) {
+        try {
+            Booking booking = bookingService.checkInBooking(id);
+            return ResponseEntity.ok(booking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
     // --- API 2: LẤY TẤT CẢ ĐẶT BÀN ---
     @GetMapping
      @PreAuthorize("hasAuthority('READ_BOOKING')")

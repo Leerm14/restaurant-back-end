@@ -35,30 +35,32 @@ public class BookingService {
     @Transactional
     public Booking createBooking(BookingCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + request.getUserId()));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
 
         RestaurantTable table = restaurantTableRepository.findById(request.getTableId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn"));
 
         if (table.getCapacity() < request.getNumGuests()) {
-            throw new RuntimeException("Bàn không đủ chỗ. Sức chứa: " + table.getCapacity() + 
-                    ", Số khách: " + request.getNumGuests());
-        }
-        if (table.getStatus() != TableStatus.Available) {
-            throw new RuntimeException("Bàn hiện không khả dụng");
-        }
-        if (request.getBookingTime().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Thời gian đặt bàn phải là thời gian trong tương lai");
+            throw new RuntimeException("Bàn không đủ chỗ.");
         }
 
-        List<Booking> existingBookings = bookingRepository.findByTableId(request.getTableId());
-        for (Booking existing : existingBookings) {
-            if (existing.getStatus() == BookingStatus.Confirmed) {
-                LocalDateTime existingTime = existing.getBookingTime();
-                if (Math.abs(java.time.Duration.between(existingTime, request.getBookingTime()).toHours()) < 2) {
-                    throw new RuntimeException("Bàn đã được đặt trong khung giờ này");
-                }
-            }
+        if (request.getBookingTime().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Thời gian đặt bàn phải là tương lai");
+        }
+
+        LocalDateTime startCheck = request.getBookingTime().minusHours(2);
+        LocalDateTime endCheck = request.getBookingTime().plusHours(2);
+
+        boolean isConflict = bookingRepository.existsConflictingBooking(
+                request.getTableId(), 
+                startCheck, 
+                endCheck
+        );
+
+        if (isConflict) {
+            throw new RuntimeException("Bàn đã được đặt trong khung giờ này (" 
+                + request.getBookingTime().minusHours(2).toLocalTime() + " - " 
+                + request.getBookingTime().plusHours(2).toLocalTime() + ")");
         }
 
         Booking booking = new Booking();
@@ -66,14 +68,28 @@ public class BookingService {
         booking.setTable(table);
         booking.setBookingTime(request.getBookingTime());
         booking.setNumGuests(request.getNumGuests());
-        booking.setStatus(BookingStatus.Confirmed);
+        booking.setStatus(BookingStatus.Confirmed); 
 
         Booking savedBooking = bookingRepository.save(booking);
+        return savedBooking;
+    }
 
-        table.setStatus(TableStatus.Booked);
+    @Transactional
+    public Booking checkInBooking(Integer bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt bàn: " + bookingId));
+
+        if (booking.getStatus() != BookingStatus.Confirmed && booking.getStatus() != BookingStatus.Pending) {
+            throw new RuntimeException("Chỉ có thể Check-in các đơn đang chờ hoặc đã xác nhận.");
+        }
+        RestaurantTable table = booking.getTable();
+        if (table.getStatus() == TableStatus.Used) {
+            throw new RuntimeException("Bàn này hiện đang có người ngồi (Used). Kiểm tra lại thực tế.");
+        }
+        table.setStatus(TableStatus.Used); 
         restaurantTableRepository.save(table);
 
-        return savedBooking;
+        return booking;
     }
 
     /**

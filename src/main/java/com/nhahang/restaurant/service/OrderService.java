@@ -265,41 +265,6 @@ public class OrderService {
 
         return convertToDTO(savedOrder);
     }
-
-    /**
-     * Quét và tự động hủy các order Dine-in quá thời gian booking, chuyển bàn về Available
-     * (Nên gọi hàm này định kỳ bằng scheduler hoặc khi truy vấn danh sách order)
-     * Scheduler: Tự động hủy order Dine-in quá hạn mỗi ngày lúc 0h05
-     */
-    @Transactional
-    @Scheduled(cron = "0 5 0 * * *") // 0h05 mỗi ngày
-    public void autoCancelExpiredDineinOrders() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Order> dineinOrders = orderRepository.findAll().stream()
-                .filter(o -> o.getOrderType() == OrderType.Dinein && o.getStatus() == OrderStatus.Pending)
-                .collect(Collectors.toList());
-        for (Order order : dineinOrders) {
-            List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
-            boolean expired = bookings.stream().noneMatch(b ->
-                b.getUser() != null &&
-                b.getUser().getId().equals(order.getUser().getId()) &&
-                b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed &&
-                b.getBookingTime() != null &&
-                (b.getBookingTime().isAfter(now.minusMinutes(30)) && b.getBookingTime().isBefore(now.plusHours(2)))
-            );
-            if (expired) {
-                order.setStatus(OrderStatus.Cancelled);
-                orderRepository.save(order);
-                // Chuyển trạng thái bàn về Available
-                RestaurantTable table = order.getTable();
-                if (table != null) {
-                    table.setStatus(com.nhahang.restaurant.model.TableStatus.Available);
-                    restaurantTableRepository.save(table);
-                }
-            }
-        }
-    }
-
     /**
      * Cập nhật đơn hàng
      */
