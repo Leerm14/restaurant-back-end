@@ -447,6 +447,11 @@ public class OrderService {
                 dto.setBookingTime(matched.getBookingTime());
             }
         }
+        if (order.getPayment() != null) {
+            dto.setPaymentStatus(order.getPayment().getStatus().name());
+        } else {
+            dto.setPaymentStatus(null);
+        }
 
         return dto;
     }

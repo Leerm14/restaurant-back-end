@@ -22,5 +22,6 @@ public class OrderDTO {
     private String orderType;
     private LocalDateTime createdAt;
     private List<OrderItemDTO> orderItems;
-    private LocalDateTime bookingTime; // Thời gian đặt bàn (nếu có)
+    private LocalDateTime bookingTime;
+    private String paymentStatus;
 }
