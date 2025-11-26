@@ -6,8 +6,6 @@ import com.nhahang.restaurant.dto.PaymentMethodDistributionDTO;
 import com.nhahang.restaurant.dto.RevenueReportDTO;
 import com.nhahang.restaurant.service.PaymentService;
 import lombok.RequiredArgsConstructor;
-import vn.payos.type.CheckoutResponseData;
-import vn.payos.type.Webhook;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -35,10 +33,10 @@ public class PaymentController {
     @PreAuthorize("hasAuthority('CREATE_PAYMENT')") 
     public ResponseEntity<?> createPayOSLink(@PathVariable Integer orderId) {
         try {
-            CheckoutResponseData data = paymentService.createPayOSLink(orderId);
+            Object data = paymentService.createPayOSLink(orderId);
             return ResponseEntity.ok(data);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
         }
     }
 
@@ -47,12 +45,12 @@ public class PaymentController {
      * Không cần token authentication (đã config ở SecurityConfig)
      */
     @PostMapping("/payos/webhook")
-    public ResponseEntity<String> handlePayOSWebhook(@RequestBody Webhook webhook) {
+    public ResponseEntity<String> handlePayOSWebhook(@RequestBody Object webhook) {
         try {
             paymentService.handlePayOSWebhook(webhook);
             return ResponseEntity.ok("Webhook received");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
         }
     }
 
