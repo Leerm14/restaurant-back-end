@@ -245,6 +245,24 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
+        // Nếu là Dine-in, sau khi tạo order thì chuyển trạng thái booking liên quan thành Completed
+        if (orderType == OrderType.Dinein && table != null && user != null) {
+            List<Booking> bookings = bookingRepository.findByTableId(table.getId());
+            LocalDateTime now = LocalDateTime.now();
+            Booking matched = bookings.stream()
+                .filter(b -> b.getUser() != null && b.getUser().getId().equals(user.getId())
+                        && (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)
+                        && b.getBookingTime() != null
+                        && (b.getBookingTime().isAfter(now.minusDays(1)))
+                )
+                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime()))
+                .findFirst().orElse(null);
+            if (matched != null) {
+                matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Completed);
+                bookingRepository.save(matched);
+            }
+        }
+
         return convertToDTO(savedOrder);
     }
 
