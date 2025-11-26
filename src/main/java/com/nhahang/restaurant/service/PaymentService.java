@@ -44,7 +44,6 @@ public class PaymentService {
     private final com.nhahang.restaurant.repository.RestaurantTableRepository restaurantTableRepository;
     @Value("${payos.return-url}")
     private String returnUrl;
-
     @Value("${payos.cancel-url}")
     private String cancelUrl;
     /**

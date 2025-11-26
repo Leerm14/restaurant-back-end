@@ -10,14 +10,10 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 @Repository
-public interface BookingRepository extends JpaRepository<Booking, Integer> {
-    
+public interface BookingRepository extends JpaRepository<Booking, Integer> {  
     List<Booking> findByUserId(Integer userId);
-    
     List<Booking> findByTableId(Integer tableId);
-
     List<Booking> findByUserPhoneNumber(String phoneNumber);
-
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Booking b " +
            "WHERE b.table.id = :tableId " +
            "AND b.status IN (com.nhahang.restaurant.model.BookingStatus.Confirmed, com.nhahang.restaurant.model.BookingStatus.Pending) " +
