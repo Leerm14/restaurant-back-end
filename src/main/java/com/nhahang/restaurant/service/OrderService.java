@@ -41,17 +41,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy tất cả đơn hàng với phân trang
-     */
-    @Transactional(readOnly = true)
-    public List<OrderDTO> getAllOrders(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Order> orderPage = orderRepository.findAll(pageable);
-        return orderPage.getContent().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
 
     /**
      * Lấy đơn hàng theo ID
@@ -118,29 +107,8 @@ public class OrderService {
     public List<OrderDTO> getOrdersByStatus(String status) {
         try {
             OrderStatus orderStatus = OrderStatus.valueOf(status);
-            List<Order> orders = orderRepository.findAll().stream()
-                    .filter(order -> order.getStatus() == orderStatus)
-                    .collect(Collectors.toList());
+            List<Order> orders = orderRepository.findByStatus(orderStatus);
             return orders.stream()
-                    .map(this::convertToDTO)
-                    .collect(Collectors.toList());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Trạng thái đơn hàng không hợp lệ: " + status);
-        }
-    }
-
-    /**
-     * Lấy đơn hàng theo trạng thái với phân trang
-     */
-    @Transactional(readOnly = true)
-    public List<OrderDTO> getOrdersByStatus(String status, int page, int size) {
-        try {
-            OrderStatus orderStatus = OrderStatus.valueOf(status);
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Order> orderPage = orderRepository.findAll(pageable);
-            
-            return orderPage.getContent().stream()
-                    .filter(order -> order.getStatus() == orderStatus)
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
         } catch (IllegalArgumentException e) {

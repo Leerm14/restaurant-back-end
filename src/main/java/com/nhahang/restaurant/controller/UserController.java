@@ -36,16 +36,9 @@ public class UserController {
     // --- API 1: LẤY TẤT CẢ NGƯỜI DÙNG ---
     @GetMapping
      @PreAuthorize("hasAuthority('READ_USER')")
-    public ResponseEntity<List<UserDTO>> getAllUsers(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         try {
-            // Validation
-            if (page < 0) page = 0;
-            if (size <= 0) size = 10;
-            if (size > 100) size = 100;
-            
-            List<UserDTO> users = userService.getAllUsers(page, size);
+            List<UserDTO> users = userService.getAllUsers();
             return ResponseEntity.ok(users);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -107,17 +100,9 @@ public class UserController {
     // --- API 6: LẤY NGƯỜI DÙNG THEO ROLE NAME ---
     @GetMapping("/role/{roleName}")
      @PreAuthorize("hasAuthority('READ_USER')")
-    public ResponseEntity<List<UserDTO>> getUsersByRoleName(
-            @PathVariable String roleName,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+    public ResponseEntity<List<UserDTO>> getUsersByRoleName(@PathVariable String roleName) {
         try {
-            // Validation
-            if (page < 0) page = 0;
-            if (size <= 0) size = 10;
-            if (size > 100) size = 100;
-            
-            List<UserDTO> users = userService.getUsersByRoleName(roleName, page, size);
+            List<UserDTO> users = userService.getUsersByRoleName(roleName);
             return ResponseEntity.ok(users);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();

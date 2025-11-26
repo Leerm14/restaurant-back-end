@@ -26,16 +26,9 @@ public class OrderController {
      */
     @GetMapping
      @PreAuthorize("hasAuthority('READ_ORDER')")
-    public ResponseEntity<List<OrderDTO>> getAllOrders(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-        try {
-            // Validation
-            if (page < 0) page = 0;
-            if (size <= 0) size = 10;
-            if (size > 100) size = 100;
-            
-            List<OrderDTO> orders = orderService.getAllOrders(page, size);
+    public ResponseEntity<List<OrderDTO>> getAllOrders() {
+        try {           
+          List<OrderDTO> orders = orderService.getAllOrders();
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -126,16 +119,9 @@ public class OrderController {
     @GetMapping("/status/{status}")
      @PreAuthorize("hasAuthority('READ_ORDER')")
     public ResponseEntity<List<OrderDTO>> getOrdersByStatus(
-            @PathVariable String status,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+            @PathVariable String status) {
         try {
-            // Validation
-            if (page < 0) page = 0;
-            if (size <= 0) size = 10;
-            if (size > 100) size = 100;
-            
-            List<OrderDTO> orders = orderService.getOrdersByStatus(status, page, size);
+            List<OrderDTO> orders = orderService.getOrdersByStatus(status);
             return ResponseEntity.ok(orders);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

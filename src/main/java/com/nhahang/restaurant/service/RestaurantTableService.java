@@ -58,10 +58,8 @@ public class RestaurantTableService {
     /**
      * Lấy tất cả bàn theo status với phân trang
      */
-    public List<RestaurantTable> getTablesByStatus(TableStatus status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<RestaurantTable> tablePage = restaurantTableRepository.findByStatus(status, pageable);
-        return tablePage.getContent();
+    public List<RestaurantTable> getTablesByStatus(TableStatus status) {
+        return restaurantTableRepository.findByStatus(status);
     }
 
     /**

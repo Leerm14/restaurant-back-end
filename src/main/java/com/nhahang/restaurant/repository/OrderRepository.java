@@ -1,5 +1,6 @@
 package com.nhahang.restaurant.repository;
 
+import com.nhahang.restaurant.model.OrderStatus;
 import com.nhahang.restaurant.model.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,8 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
+
+    List<Order> findByStatus(OrderStatus status); 
 
     List<Order> findByUserId(Integer userId);
 

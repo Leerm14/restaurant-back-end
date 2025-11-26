@@ -30,15 +30,7 @@ public class RestaurantTableController {
     @GetMapping
      @PreAuthorize("hasAuthority('READ_TABLE')")
     public ResponseEntity<List<RestaurantTable>> getTablesByStatus(
-            @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-        
-        // Validation
-        if (page < 0) page = 0;
-        if (size <= 0) size = 10;
-        if (size > 100) size = 100;
-        
+            @RequestParam(value = "status", required = false) String status) {      
         List<RestaurantTable> tables;
         if (status == null) {
             tables = restaurantTableService.getAllTables();
@@ -49,7 +41,7 @@ public class RestaurantTableController {
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.badRequest().build();
             }
-            tables = restaurantTableService.getTablesByStatus(tableStatus, page, size);
+            tables = restaurantTableService.getTablesByStatus(tableStatus);
         }
         return ResponseEntity.ok(tables);
     }
