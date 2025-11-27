@@ -213,7 +213,7 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // Nếu là Dine-in, sau khi tạo order thì chuyển trạng thái booking liên quan thành Completed
+        // Nếu là Dine-in, sau khi tạo order thì chuyển trạng thái booking liên quan thành 
         if (orderType == OrderType.Dinein && table != null && user != null) {
             List<Booking> bookings = bookingRepository.findByTableId(table.getId());
             LocalDateTime now = LocalDateTime.now();
@@ -226,7 +226,7 @@ public class OrderService {
                 .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime()))
                 .findFirst().orElse(null);
             if (matched != null) {
-                matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Completed);
+                matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Confirmed);
                 bookingRepository.save(matched);
             }
         }
