@@ -14,6 +14,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     List<Booking> findByUserId(Integer userId);
     List<Booking> findByTableId(Integer tableId);
     List<Booking> findByUserPhoneNumber(String phoneNumber);
+
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Booking b " +
            "WHERE b.table.id = :tableId " +
            "AND b.status IN (com.nhahang.restaurant.model.BookingStatus.Confirmed, com.nhahang.restaurant.model.BookingStatus.Pending) " +
@@ -21,6 +22,15 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
            "AND b.bookingTime < :endTime")
     boolean existsConflictingBooking(
             @Param("tableId") Integer tableId, 
+            @Param("startTime") LocalDateTime startTime, 
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    @Query("SELECT b FROM Booking b " +
+           "WHERE b.status IN (com.nhahang.restaurant.model.BookingStatus.Confirmed, com.nhahang.restaurant.model.BookingStatus.Pending) " +
+           "AND b.bookingTime > :startTime " +
+           "AND b.bookingTime < :endTime")
+    List<Booking> findConflictingBookings(
             @Param("startTime") LocalDateTime startTime, 
             @Param("endTime") LocalDateTime endTime
     );

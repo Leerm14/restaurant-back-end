@@ -1,19 +1,25 @@
 package com.nhahang.restaurant.service;
+
 import com.nhahang.restaurant.dto.TableDTO;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
+import com.nhahang.restaurant.model.entity.Booking;
+import com.nhahang.restaurant.repository.BookingRepository;
 import com.nhahang.restaurant.repository.RestaurantTableRepository;
 import com.nhahang.restaurant.model.entity.RestaurantTable;
 import com.nhahang.restaurant.model.TableStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class RestaurantTableService {
     private final RestaurantTableRepository restaurantTableRepository;
+    private final BookingRepository bookingRepository; // [MỚI] Inject thêm BookingRepository
 
     /**
      * Lấy thống kê số bàn (tổng số và theo từng trạng thái)
@@ -42,12 +48,14 @@ public class RestaurantTableService {
     public List<RestaurantTable> getAllTables() {
         return restaurantTableRepository.findAll();
     }
+
     /**
      * Lấy bàn theo number
      */
     public Optional<RestaurantTable> getTableByNumber(int tableNumber) {
         return restaurantTableRepository.findByTableNumber(tableNumber);
     }
+
     /**
      * Lấy tất cả bàn đang available
      */
@@ -56,29 +64,43 @@ public class RestaurantTableService {
     }
 
     /**
-     * Lấy tất cả bàn theo status với phân trang
+     * Lấy tất cả bàn theo status
      */
     public List<RestaurantTable> getTablesByStatus(TableStatus status) {
         return restaurantTableRepository.findByStatus(status);
     }
 
     /**
-     * Lấy tất cả bàn đang booked
+     * [MỚI] Lấy trạng thái các bàn tại một thời điểm cụ thể
+     * Logic: Tìm các booking trong khoảng [time - 2h, time + 2h].
+     * Bàn nào có booking trong khoảng này sẽ bị đánh dấu là Booked.
      */
-    public List<RestaurantTable> getBookedTables() {
-        return restaurantTableRepository.findByStatus(TableStatus.Booked);
-    }
-    /**
-     * Lấy tất cả bàn đang cleaning
-     */
-    public List<RestaurantTable> getCleaningTables() {
-        return restaurantTableRepository.findByStatus(TableStatus.Cleaning);
-    }
-    /**
-     * Lấy tất cả bàn đang used
-     */
-    public List<RestaurantTable> getUsedTables() {
-        return restaurantTableRepository.findByStatus(TableStatus.Used);
+    public List<RestaurantTable> getTablesStatusAtTime(LocalDateTime checkTime) {
+        // Lấy tất cả các bàn
+        List<RestaurantTable> allTables = restaurantTableRepository.findAll();
+
+        // Xác định khung giờ va chạm (2 tiếng trước và sau giờ ăn)
+        LocalDateTime startCheck = checkTime.minusHours(2);
+        LocalDateTime endCheck = checkTime.plusHours(2);
+
+        // Tìm các booking đã tồn tại trong khung giờ này
+        List<Booking> conflicts = bookingRepository.findConflictingBookings(startCheck, endCheck);
+        
+        // Lấy danh sách ID các bàn đã bị đặt
+        Set<Integer> bookedTableIds = conflicts.stream()
+                .map(b -> b.getTable().getId())
+                .collect(Collectors.toSet());
+
+        // Cập nhật trạng thái hiển thị (Chỉ update trên object trả về, không lưu DB)
+        for (RestaurantTable table : allTables) {
+            if (bookedTableIds.contains(table.getId())) {
+                table.setStatus(TableStatus.Booked);
+            } else {
+                // Nếu không bị đặt, coi như là Trống để khách chọn
+                table.setStatus(TableStatus.Available);
+            }
+        }
+        return allTables;
     }
 
     /**
@@ -96,6 +118,7 @@ public class RestaurantTableService {
 
         return restaurantTableRepository.save(newTable);
     }
+
     /**
      * Cập nhật thông tin bàn
      */
@@ -115,6 +138,7 @@ public class RestaurantTableService {
 
         return restaurantTableRepository.save(existingTable);
     }
+
     /**
      * Cập nhật trạng thái bàn
      */
@@ -131,6 +155,7 @@ public class RestaurantTableService {
         existingTable.setStatus(status);
         return restaurantTableRepository.save(existingTable);
     }
+
     /**
      * Xóa bàn
      */

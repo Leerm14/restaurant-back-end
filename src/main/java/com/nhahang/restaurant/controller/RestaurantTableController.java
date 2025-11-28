@@ -5,11 +5,13 @@ import com.nhahang.restaurant.model.entity.RestaurantTable;
 import com.nhahang.restaurant.service.RestaurantTableService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -45,6 +47,15 @@ public class RestaurantTableController {
         }
         return ResponseEntity.ok(tables);
     }
+
+    // --- [MỚI] API KIỂM TRA TÌNH TRẠNG BÀN THEO THỜI GIAN ---
+    @GetMapping("/availability")
+    @PreAuthorize("hasAuthority('READ_TABLE')")
+    public ResponseEntity<List<RestaurantTable>> checkTableAvailability(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime time) {
+        return ResponseEntity.ok(restaurantTableService.getTablesStatusAtTime(time));
+    }
+
     // --- API 2: LẤY BÀN THEO SỐ BÀN ---
     @GetMapping("/{tableNumber}")
      @PreAuthorize("hasAuthority('READ_TABLE')")
@@ -53,6 +64,7 @@ public class RestaurantTableController {
                 .map(table -> ResponseEntity.ok(table))
                 .orElse(ResponseEntity.notFound().build());
     }
+
     // --- API 3: THÊM BÀN MỚI ---
     @PostMapping
      @PreAuthorize("hasAuthority('CREATE_TABLE')")
@@ -64,6 +76,7 @@ public class RestaurantTableController {
             return ResponseEntity.badRequest().build();
         }
     }
+
     // --- API 4: CẬP NHẬT THÔNG TIN BÀN ---
     @PutMapping("/{id}")
      @PreAuthorize("hasAuthority('UPDATE_TABLE')")
@@ -88,7 +101,6 @@ public class RestaurantTableController {
         }
     }
     
-
     // --- API 6: XÓA BÀN ---
     @DeleteMapping("/{id}")
      @PreAuthorize("hasAuthority('DELETE_TABLE')")
