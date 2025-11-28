@@ -34,4 +34,16 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             @Param("startTime") LocalDateTime startTime, 
             @Param("endTime") LocalDateTime endTime
     );
+
+    @Query("SELECT b FROM Booking b " +
+           "WHERE b.user.id = :userId " +
+           "AND b.table.id = :tableId " +
+           "AND b.bookingTime BETWEEN :startTime AND :endTime " +
+           "ORDER BY b.bookingTime DESC")
+    List<Booking> findBookingsForOrder(
+            @Param("userId") Integer userId,
+            @Param("tableId") Integer tableId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 }

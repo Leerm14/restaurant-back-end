@@ -373,31 +373,25 @@ public class OrderService {
             dto.setOrderItems(orderItemDTOs);
         }
 
+        // --- FIX LOGIC TÌM BOOKING ---
         if (order.getOrderType() == OrderType.Dinein && order.getTable() != null && order.getUser() != null) {
-            List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
-            
-            // Dùng thời gian tạo đơn hàng làm mốc tìm kiếm (không dùng LocalDateTime.now())
-            LocalDateTime orderTime = order.getCreatedAt();
-            
-            Booking matched = bookings.stream()
-                .filter(b -> b.getUser() != null && b.getUser().getId().equals(order.getUser().getId())
-                        // Bao gồm cả trạng thái Completed vì đơn hàng đã thanh toán (Completed) thì booking cũng Completed
-                        && (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed 
-                            || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending
-                            || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Completed)
-                        && b.getBookingTime() != null
-                        // Tìm booking trong khoảng thời gian xung quanh lúc tạo đơn (ví dụ +/- 6 tiếng)
-                        && b.getBookingTime().isAfter(orderTime.minusHours(6)) 
-                        && b.getBookingTime().isBefore(orderTime.plusHours(6))
-                )
-                // Lấy booking gần nhất với thời điểm tạo đơn
-                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime()))
-                .findFirst().orElse(null);
-                
-            if (matched != null) {
-                dto.setBookingTime(matched.getBookingTime());
+            // Tìm booking trong khoảng +/- 12 tiếng quanh thời điểm tạo đơn
+            LocalDateTime startSearch = order.getCreatedAt().minusHours(12);
+            LocalDateTime endSearch = order.getCreatedAt().plusHours(12);
+
+            List<Booking> foundBookings = bookingRepository.findBookingsForOrder(
+                order.getUser().getId(),
+                order.getTable().getId(),
+                startSearch,
+                endSearch
+            );
+
+            if (!foundBookings.isEmpty()) {
+                // Lấy booking gần nhất (đã được sort DESC trong query)
+                dto.setBookingTime(foundBookings.get(0).getBookingTime());
             }
         }
+        // ------------------------------
 
         if (order.getPayment() != null) {
             dto.setPaymentStatus(order.getPayment().getStatus().name());
