@@ -31,9 +31,6 @@ public class OrderService {
     private final MenuItemRepository menuItemRepository;
     private final BookingRepository bookingRepository;
 
-    /**
-     * Lấy tất cả đơn hàng
-     */
     @Transactional(readOnly = true)
     public List<OrderDTO> getAllOrders() {
         return orderRepository.findAll().stream()
@@ -41,10 +38,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-
-    /**
-     * Lấy đơn hàng theo ID
-     */
     @Transactional(readOnly = true)
     public OrderDTO getOrderById(Integer id) {
         Order order = orderRepository.findById(id)
@@ -52,9 +45,6 @@ public class OrderService {
         return convertToDTO(order);
     }
 
-    /**
-     * Lấy đơn hàng theo user ID
-     */
     @Transactional(readOnly = true)
     public List<OrderDTO> getOrdersByUserId(Integer userId) {
         List<Order> orders = orderRepository.findAll().stream()
@@ -65,9 +55,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy đơn hàng theo email của user
-     */
     @Transactional(readOnly = true)
     public List<OrderDTO> getOrdersByUserEmail(String email) {
         List<Order> orders = orderRepository.findByUserEmail(email);
@@ -76,9 +63,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy đơn hàng theo số điện thoại của user
-     */
     @Transactional(readOnly = true)
     public List<OrderDTO> getOrdersByUserPhoneNumber(String phoneNumber) {
         List<Order> orders = orderRepository.findByUserPhoneNumber(phoneNumber);
@@ -87,9 +71,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy đơn hàng theo table ID
-     */
     @Transactional(readOnly = true)
     public List<OrderDTO> getOrdersByTableId(Integer tableId) {
         List<Order> orders = orderRepository.findAll().stream()
@@ -100,9 +81,6 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy đơn hàng theo trạng thái
-     */
     @Transactional(readOnly = true)
     public List<OrderDTO> getOrdersByStatus(String status) {
         try {
@@ -116,15 +94,11 @@ public class OrderService {
         }
     }
 
-    /**
-     * Tạo đơn hàng mới
-     */
     @Transactional
     public OrderDTO createOrder(OrderCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + request.getUserId()));
 
-        // Kiểm tra orderType
         OrderType orderType;
         try {
             orderType = OrderType.valueOf(request.getOrderType());
@@ -132,22 +106,18 @@ public class OrderService {
             throw new RuntimeException("Loại đơn hàng không hợp lệ: " + request.getOrderType());
         }
 
-        // Kiểm tra bàn - chỉ bắt buộc nếu không phải TakeAway
         RestaurantTable table = null;
         if (orderType == OrderType.Takeaway) {
-            // TakeAway không cần bàn
             if (request.getTableId() != null) {
                 throw new RuntimeException("Đơn hàng mang đi không cần bàn");
             }
         } else {
-            // Dinein bắt buộc phải có bàn và booking hợp lệ
             if (request.getTableId() == null) {
                 throw new RuntimeException("Đơn hàng tại chỗ phải có bàn");
             }
             table = restaurantTableRepository.findById(request.getTableId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
 
-            // Kiểm tra booking hợp lệ
             LocalDateTime now = LocalDateTime.now();
             List<Booking> bookings = bookingRepository.findByTableId(table.getId());
             boolean hasValidBooking = bookings.stream().anyMatch(b ->
@@ -162,7 +132,6 @@ public class OrderService {
             }
         }
 
-        // Kiểm tra danh sách món ăn
         if (request.getOrderItems() == null || request.getOrderItems().isEmpty()) {
             throw new RuntimeException("Đơn hàng phải có ít nhất một món");
         }
@@ -177,7 +146,6 @@ public class OrderService {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        // Gộp các món ăn trùng menuItemId
         var mergedItems = request.getOrderItems().stream()
                 .collect(Collectors.groupingBy(
                         OrderItemRequest::getMenuItemId,
@@ -213,7 +181,6 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // Nếu là Dine-in, sau khi tạo order thì chuyển trạng thái booking liên quan thành 
         if (orderType == OrderType.Dinein && table != null && user != null) {
             List<Booking> bookings = bookingRepository.findByTableId(table.getId());
             LocalDateTime now = LocalDateTime.now();
@@ -233,15 +200,12 @@ public class OrderService {
 
         return convertToDTO(savedOrder);
     }
-    /**
-     * Cập nhật đơn hàng
-     */
+
     @Transactional
     public OrderDTO updateOrder(Integer id, OrderCreateRequest request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + id));
 
-        // Kiểm tra trạng thái
         if (order.getStatus() == OrderStatus.Cancelled) {
             throw new RuntimeException("Không thể cập nhật đơn hàng đã bị hủy");
         }
@@ -250,7 +214,6 @@ public class OrderService {
             throw new RuntimeException("Không thể cập nhật đơn hàng đã hoàn thành");
         }
 
-        // Cập nhật orderType nếu có
         OrderType newOrderType = order.getOrderType();
         if (request.getOrderType() != null) {
             try {
@@ -261,15 +224,12 @@ public class OrderService {
             }
         }
 
-        // Cập nhật table theo orderType
         if (newOrderType == OrderType.Takeaway) {
-            // TakeAway không cần bàn
             if (request.getTableId() != null) {
                 throw new RuntimeException("Đơn hàng mang đi không cần bàn");
             }
             order.setTable(null);
         } else {
-            // Dinein bắt buộc phải có bàn
             if (request.getTableId() != null) {
                 RestaurantTable newTable = restaurantTableRepository.findById(request.getTableId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy bàn với ID: " + request.getTableId()));
@@ -284,7 +244,6 @@ public class OrderService {
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         
-        // Gộp các món ăn trùng menuItemId
         var mergedItems = request.getOrderItems().stream()
                 .collect(Collectors.groupingBy(
                         OrderItemRequest::getMenuItemId,
@@ -323,9 +282,6 @@ public class OrderService {
         return convertToDTO(updatedOrder);
     }
 
-    /**
-     * Cập nhật trạng thái đơn hàng
-     */
     @Transactional
     public OrderDTO updateOrderStatus(Integer id, String status) {
         Order order = orderRepository.findById(id)
@@ -334,7 +290,6 @@ public class OrderService {
         try {
             OrderStatus newStatus = OrderStatus.valueOf(status);
             
-            // Kiểm tra logic chuyển trạng thái
             if (order.getStatus() == OrderStatus.Cancelled) {
                 throw new RuntimeException("Không thể cập nhật đơn hàng đã bị hủy");
             }
@@ -352,9 +307,6 @@ public class OrderService {
         }
     }
 
-    /**
-     * Hủy đơn hàng
-     */
     @Transactional
     public OrderDTO cancelOrder(Integer id) {
         Order order = orderRepository.findById(id)
@@ -368,7 +320,6 @@ public class OrderService {
             throw new RuntimeException("Không thể hủy đơn hàng đã hoàn thành");
         }
 
-        // Nếu là Dinein, tìm và hủy booking liên quan
         if (order.getOrderType() == OrderType.Dinein && order.getTable() != null && order.getUser() != null) {
             List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
             LocalDateTime now = LocalDateTime.now();
@@ -378,13 +329,12 @@ public class OrderService {
                         && b.getBookingTime() != null
                         && (b.getBookingTime().isAfter(now.minusDays(1)) && b.getBookingTime().isBefore(now.plusDays(2)))
                 )
-                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime())) // booking mới nhất trước
+                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime()))
                 .findFirst().orElse(null);
             if (matched != null) {
                 matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Cancelled);
                 bookingRepository.save(matched);
             }
-            // Chuyển trạng thái bàn về Available
             RestaurantTable table = order.getTable();
             if (table != null) {
                 table.setStatus(com.nhahang.restaurant.model.TableStatus.Available);
@@ -397,9 +347,6 @@ public class OrderService {
         return convertToDTO(cancelledOrder);
     }
 
-    /**
-     * Xóa đơn hàng
-     */
     @Transactional
     public void deleteOrder(Integer id) {
         Order order = orderRepository.findById(id)
@@ -407,9 +354,6 @@ public class OrderService {
         orderRepository.delete(order);
     }
 
-    /**
-     * Chuyển đổi Order entity sang OrderDTO
-     */
     private OrderDTO convertToDTO(Order order) {
         OrderDTO dto = new OrderDTO();
         dto.setId(order.getId());
@@ -422,7 +366,6 @@ public class OrderService {
         dto.setOrderType(order.getOrderType().name());
         dto.setCreatedAt(order.getCreatedAt());
 
-        // Chuyển đổi order items
         if (order.getOrderItems() != null) {
             List<OrderItemDTO> orderItemDTOs = order.getOrderItems().stream()
                     .map(this::convertOrderItemToDTO)
@@ -430,23 +373,32 @@ public class OrderService {
             dto.setOrderItems(orderItemDTOs);
         }
 
-        // Thêm thời gian đặt bàn nếu là Dine-in
         if (order.getOrderType() == OrderType.Dinein && order.getTable() != null && order.getUser() != null) {
-            // Lấy booking hợp lệ gần nhất cho user và bàn này
             List<Booking> bookings = bookingRepository.findByTableId(order.getTable().getId());
-            LocalDateTime now = LocalDateTime.now();
+            
+            // Dùng thời gian tạo đơn hàng làm mốc tìm kiếm (không dùng LocalDateTime.now())
+            LocalDateTime orderTime = order.getCreatedAt();
+            
             Booking matched = bookings.stream()
                 .filter(b -> b.getUser() != null && b.getUser().getId().equals(order.getUser().getId())
-                        && (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending)
+                        // Bao gồm cả trạng thái Completed vì đơn hàng đã thanh toán (Completed) thì booking cũng Completed
+                        && (b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Confirmed 
+                            || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Pending
+                            || b.getStatus() == com.nhahang.restaurant.model.BookingStatus.Completed)
                         && b.getBookingTime() != null
-                        && (b.getBookingTime().isAfter(now.minusDays(1)) && b.getBookingTime().isBefore(now.plusDays(2)))
+                        // Tìm booking trong khoảng thời gian xung quanh lúc tạo đơn (ví dụ +/- 6 tiếng)
+                        && b.getBookingTime().isAfter(orderTime.minusHours(6)) 
+                        && b.getBookingTime().isBefore(orderTime.plusHours(6))
                 )
-                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime())) // booking mới nhất trước
+                // Lấy booking gần nhất với thời điểm tạo đơn
+                .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime()))
                 .findFirst().orElse(null);
+                
             if (matched != null) {
                 dto.setBookingTime(matched.getBookingTime());
             }
         }
+
         if (order.getPayment() != null) {
             dto.setPaymentStatus(order.getPayment().getStatus().name());
         } else {
@@ -456,9 +408,6 @@ public class OrderService {
         return dto;
     }
 
-    /**
-     * Chuyển đổi OrderItem entity sang OrderItemDTO
-     */
     private OrderItemDTO convertOrderItemToDTO(OrderItem orderItem) {
         OrderItemDTO dto = new OrderItemDTO();
         dto.setId(orderItem.getId());
@@ -470,17 +419,12 @@ public class OrderService {
         return dto;
     }
 
-    /**
-     * Lấy thống kê đơn hàng theo tháng
-     */
     @Transactional(readOnly = true)
     public MonthlyOrderStatsDTO getMonthlyOrderStats(Integer year, Integer month) {
-        // Tạo khoảng thời gian cho tháng
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDateTime startDate = yearMonth.atDay(1).atStartOfDay();
         LocalDateTime endDate = yearMonth.atEndOfMonth().atTime(23, 59, 59);
 
-        // Lấy tất cả đơn hàng trong tháng
         List<Order> orders = orderRepository.findByCreatedAtBetween(startDate, endDate);
 
         MonthlyOrderStatsDTO stats = new MonthlyOrderStatsDTO();
@@ -488,7 +432,6 @@ public class OrderService {
         stats.setMonth(month);
         stats.setTotalOrders((long) orders.size());
 
-        // Đếm số đơn hàng theo trạng thái
         long completedOrders = orders.stream()
                 .filter(order -> order.getStatus() == OrderStatus.Completed)
                 .count();
@@ -504,7 +447,6 @@ public class OrderService {
                 .count();
         stats.setPendingOrders(pendingOrders);
 
-        // Tính tổng doanh thu từ các đơn hàng đã hoàn thành
         BigDecimal totalRevenue = orders.stream()
                 .filter(order -> order.getStatus() == OrderStatus.Completed)
                 .map(Order::getTotalAmount)
@@ -514,9 +456,6 @@ public class OrderService {
         return stats;
     }
 
-    /**
-     * Lấy thống kê đơn hàng cho nhiều tháng
-     */
     @Transactional(readOnly = true)
     public List<MonthlyOrderStatsDTO> getMonthlyOrderStatsRange(Integer year, Integer fromMonth, Integer toMonth) {
         List<MonthlyOrderStatsDTO> statsList = new ArrayList<>();
