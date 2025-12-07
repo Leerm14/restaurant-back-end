@@ -1,16 +1,17 @@
 package com.nhahang.restaurant.repository;
 
+import com.nhahang.restaurant.model.BookingStatus;
 import com.nhahang.restaurant.model.entity.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
-public interface BookingRepository extends JpaRepository<Booking, Integer> {  
+public interface BookingRepository extends JpaRepository<Booking, Integer> {
     List<Booking> findByUserId(Integer userId);
     List<Booking> findByTableId(Integer tableId);
     List<Booking> findByUserPhoneNumber(String phoneNumber);
@@ -45,5 +46,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             @Param("tableId") Integer tableId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
+    );
+
+    @Query("SELECT b FROM Booking b WHERE b.status IN (:statuses) AND b.bookingTime < :threshold")
+    List<Booking> findOverdueBookings(
+        @Param("statuses") List<BookingStatus> statuses, 
+        @Param("threshold") LocalDateTime threshold
     );
 }

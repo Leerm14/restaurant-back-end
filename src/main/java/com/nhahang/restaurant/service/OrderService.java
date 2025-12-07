@@ -192,8 +192,9 @@ public class OrderService {
                 )
                 .sorted((b1, b2) -> b2.getBookingTime().compareTo(b1.getBookingTime()))
                 .findFirst().orElse(null);
+            
             if (matched != null) {
-                matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Confirmed);
+                matched.setStatus(com.nhahang.restaurant.model.BookingStatus.Completed);
                 bookingRepository.save(matched);
             }
         }
@@ -373,9 +374,7 @@ public class OrderService {
             dto.setOrderItems(orderItemDTOs);
         }
 
-        // --- FIX LOGIC TÌM BOOKING ---
         if (order.getOrderType() == OrderType.Dinein && order.getTable() != null && order.getUser() != null) {
-            // Tìm booking trong khoảng +/- 12 tiếng quanh thời điểm tạo đơn
             LocalDateTime startSearch = order.getCreatedAt().minusHours(12);
             LocalDateTime endSearch = order.getCreatedAt().plusHours(12);
 
@@ -387,11 +386,9 @@ public class OrderService {
             );
 
             if (!foundBookings.isEmpty()) {
-                // Lấy booking gần nhất (đã được sort DESC trong query)
                 dto.setBookingTime(foundBookings.get(0).getBookingTime());
             }
         }
-        // ------------------------------
 
         if (order.getPayment() != null) {
             dto.setPaymentStatus(order.getPayment().getStatus().name());

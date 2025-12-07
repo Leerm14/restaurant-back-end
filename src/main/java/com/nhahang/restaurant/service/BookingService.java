@@ -2,18 +2,22 @@ package com.nhahang.restaurant.service;
 
 import com.nhahang.restaurant.dto.BookingCreateRequest;
 import com.nhahang.restaurant.model.BookingStatus;
+import com.nhahang.restaurant.model.OrderStatus;
 import com.nhahang.restaurant.model.TableStatus;
 import com.nhahang.restaurant.model.entity.Booking;
 import com.nhahang.restaurant.model.entity.RestaurantTable;
 import com.nhahang.restaurant.model.entity.User;
 import com.nhahang.restaurant.repository.BookingRepository;
+import com.nhahang.restaurant.repository.OrderRepository;
 import com.nhahang.restaurant.repository.RestaurantTableRepository;
 import com.nhahang.restaurant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -23,10 +27,8 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final RestaurantTableRepository restaurantTableRepository;
+    private final OrderRepository orderRepository;
 
-    /**
-     * Tạo đặt bàn mới
-     */
     @Transactional
     public Booking createBooking(BookingCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
@@ -53,9 +55,7 @@ public class BookingService {
         );
 
         if (isConflict) {
-            throw new RuntimeException("Bàn đã được đặt trong khung giờ này (" 
-                + request.getBookingTime().minusHours(2).toLocalTime() + " - " 
-                + request.getBookingTime().plusHours(2).toLocalTime() + ")");
+            throw new RuntimeException("Bàn đã được đặt trong khung giờ này");
         }
 
         Booking booking = new Booking();
@@ -65,8 +65,7 @@ public class BookingService {
         booking.setNumGuests(request.getNumGuests());
         booking.setStatus(BookingStatus.Confirmed); 
 
-        Booking savedBooking = bookingRepository.save(booking);
-        return savedBooking;
+        return bookingRepository.save(booking);
     }
 
     @Transactional
@@ -79,7 +78,7 @@ public class BookingService {
         }
         RestaurantTable table = booking.getTable();
         if (table.getStatus() == TableStatus.Used) {
-            throw new RuntimeException("Bàn này hiện đang có người ngồi (Used). Kiểm tra lại thực tế.");
+            throw new RuntimeException("Bàn này hiện đang có người ngồi.");
         }
         table.setStatus(TableStatus.Used); 
         restaurantTableRepository.save(table);
@@ -87,43 +86,27 @@ public class BookingService {
         return booking;
     }
 
-    /**
-     * Lấy tất cả đặt bàn
-     */
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
     }
-    /**
-     * Lấy đặt bàn theo ID
-     */
+
     public Booking getBookingById(Integer id) {
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đặt bàn với ID: " + id));
     }
 
-    /**
-     * Lấy đặt bàn theo user ID
-     */
     public List<Booking> getBookingsByUserId(Integer userId) {
         return bookingRepository.findByUserId(userId);
     }
 
-    /**
-     * Lấy đặt bàn theo table ID
-     */
     public List<Booking> getBookingsByTableId(Integer tableId) {
         return bookingRepository.findByTableId(tableId);
     }
-    /**
-     * Lấy đặt bàn theo số điện thoại
-     */
+
     public List<Booking> getBookingsByPhoneNumber(String phoneNumber) {
         return bookingRepository.findByUserPhoneNumber(phoneNumber);
     }
 
-    /**
-     * Cập nhật trạng thái đặt bàn
-     */
     @Transactional
     public Booking updateBookingStatus(Integer id, String statusStr) {
         Booking booking = bookingRepository.findById(id)
@@ -151,9 +134,6 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-    /**
-     * Hủy đặt bàn
-     */
     @Transactional
     public Booking cancelBooking(Integer id) {
         Booking booking = bookingRepository.findById(id)
@@ -175,9 +155,6 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-    /**
-     * Hoàn thành đặt bàn
-     */
     @Transactional
     public Booking completeBooking(Integer id) {
         Booking booking = bookingRepository.findById(id)
@@ -200,9 +177,6 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-    /**
-     * Cập nhật thông tin đặt bàn
-     */
     @Transactional
     public Booking updateBooking(Integer id, BookingCreateRequest request) {
         Booking booking = bookingRepository.findById(id)
@@ -243,9 +217,6 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-    /**
-     * Xóa đặt bàn
-     */
     @Transactional
     public void deleteBooking(Integer id) {
         Booking booking = bookingRepository.findById(id)
@@ -256,5 +227,41 @@ public class BookingService {
         restaurantTableRepository.save(table);
 
         bookingRepository.delete(booking);
+    }
+
+    @Scheduled(fixedRate = 600000)
+    @Transactional
+    public void autoCancelOverdueBookings() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(2);
+        List<BookingStatus> targetStatuses = Arrays.asList(BookingStatus.Pending, BookingStatus.Confirmed);
+        
+        List<OrderStatus> activeOrderStatuses = Arrays.asList(
+            OrderStatus.Pending, 
+            OrderStatus.Confirmed, 
+            OrderStatus.Preparing
+        );
+
+        List<Booking> overdueBookings = bookingRepository.findOverdueBookings(targetStatuses, threshold);
+
+        for (Booking booking : overdueBookings) {
+            RestaurantTable table = booking.getTable();
+            
+            boolean hasActiveOrder = false;
+            if (table != null) {
+                hasActiveOrder = orderRepository.existsActiveOrderAtTable(table.getId(), activeOrderStatuses);
+            }
+
+            if (hasActiveOrder) {
+                booking.setStatus(BookingStatus.Completed);
+            } else {
+                booking.setStatus(BookingStatus.Cancelled);
+                if (table != null && table.getStatus() != TableStatus.Used) {
+                    table.setStatus(TableStatus.Available);
+                    restaurantTableRepository.save(table);
+                }
+            }
+        }
+        
+        bookingRepository.saveAll(overdueBookings);
     }
 }
